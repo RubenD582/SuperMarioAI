@@ -1,0 +1,12 @@
+body {
+  background: #000;
+  margin: 0;
+  image-rendering: high-quality;
+  overflow: hidden;
+}
+
+* {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+}
