@@ -154,16 +154,23 @@ const Game = () => {
   }, []);
 
   useEffect(() => {
+    const gameState = {
+      lastUpdateTime: 0,
+      accumulator: 0
+    };
+
     const gameLoop = createGameLoop({
-      maxStep: 0.05,
-      onUpdate: ({ delta, gameDelta, gameTime }) => {
-        const fps = Math.round(1 / delta);
+      targetFps: 144,
+      onUpdate: ({ delta, gameTime, fps, ups }) => {
+        // Occasionally log performance stats
+        if (Math.random() < 0.01) {
+          console.log(`Update rate: ${ups} ups, Render rate: ${fps} fps`);
+        }
 
         if (blocks.length > 0) {
           if (entities) {
             for (let i = entities.length - 1; i >= 0; i--) {
               const entity = entities[i];
-              // Check if it's a Fireball and needs full update
               if (entity instanceof Fireball) {
                 entity.update(delta);
               } else if (entity instanceof Goomba) {
@@ -173,14 +180,12 @@ const Game = () => {
                 entity.animate(delta);
               }
 
-              // Remove collected or marked for removal entities
               if (entity.isCollected || entity.remove) {
                 setEntities(prev => prev.filter((_, index) => index !== i));
               }
             }
           }
 
-          // Remove broken blocks
           for (let i = entities.length - 1; i >= 0; i--) {
             if (entities[i].isCollected) {
               entities.splice(i, 1);
@@ -196,13 +201,13 @@ const Game = () => {
             }
           });
 
-          // Remove broken blocks
           for (let i = blocks.length - 1; i >= 0; i--) {
             if (blocks[i].broken && (!blocks[i].fragments || blocks[i].fragments.length === 0)) {
               blocks.splice(i, 1);
             }
           }
 
+          // Update players
           if (players) {
             players.forEach((player) => {
               player.update?.(delta, entities);
@@ -212,6 +217,11 @@ const Game = () => {
         }
 
         camera.updateCamera(delta);
+
+        gameState.lastUpdateTime = gameTime;
+      },
+
+      onRender: ({ delta, gameTime }) => {
         drawLevelRef.current?.renderFrame(delta);
       }
     });
