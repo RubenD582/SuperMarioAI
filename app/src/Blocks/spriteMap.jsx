@@ -21,7 +21,7 @@ import pipeConnection from '../assets/Sprites/PipeConnection.png';
 import castle from '../assets/Sprites/Castle.png';
 import flagPole from '../assets/Sprites/FlagPole.png';
 import flag from '../assets/Sprites/Flag.png';
-import title from '../assets/Sprites/title.png';
+import goomba from '../assets/Sprites/Goomba_Walk1.png';
 
 export const imageList = [
   { id: 'ground', url: ground, w: 32, h: 32, solid: true },
@@ -47,7 +47,7 @@ export const imageList = [
   { id: 'castle', url: castle, w: 160, h: 160, solid: false },
   { id: 'flagPole', url: flagPole, w: 32, h: 320, solid: false },
   { id: 'flag', url: flag, w: 64, h: 32, solid: false },
-  { id: 'title', url: title, w: 384, h: 192, solid: false },
+  { id: 'goomba', url: goomba, w: 32, h: 32, solid: false },
 ];
 
 // Create a lookup object by ID for easier access

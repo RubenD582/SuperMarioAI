@@ -11,6 +11,7 @@ import Collision from '../utils/collision.jsx';
 import setupKeyboardInput, { subscribeToKeys } from "../utils/keyboardInput.jsx";
 import { FRAME_DURATION } from "../constants/constants.jsx";
 import createGameLoop from "../utils/gameLoop.jsx";
+import Fireball from "../entities/fireball.jsx";
 
 export let blocks = []; // Global blocks
 
@@ -42,14 +43,14 @@ const Game = () => {
   const [population, setPopulation] = useState(1);
   const [players, setPlayers] = useState([]);
 
-  const [items, setItems] = useState([]);
+  const [entities, setEntities] = useState([]);
 
   const camera = useCamera();
   const gameRef = useRef(null);
   const drawLevelRef = useRef(null);
 
   const addItemCallback = (item) => {
-    setItems((prevItems) => [...prevItems, item]);
+    setEntities((prevItems) => [...prevItems, item]);
   };
 
   const collisionRef = useRef(new Collision(addItemCallback));
@@ -82,8 +83,9 @@ const Game = () => {
           player.keys = {
             left: keys['a'] || false,
             right: keys['d'] || false,
-            up: keys[' '] || false,
+            up: keys[' '] || keys['w'] || keys['arrowup'] || false,
             b: keys['b'] || false,
+            down: keys['s'] || false,
           };
           return player;
         })
@@ -100,7 +102,8 @@ const Game = () => {
         new Player(
           TILE_SIZE * 2,
           TILE_SIZE * 10,
-          collisionRef.current
+          collisionRef.current,
+          addItemCallback
         )
       );
     }
@@ -123,7 +126,6 @@ const Game = () => {
             sprite.w || TILE_SIZE,
             sprite.h || TILE_SIZE,
             sprite.image,
-            tileId,
             collisionRef.current,
             sprite.solid || false
           );
@@ -133,8 +135,8 @@ const Game = () => {
             rowIndex * TILE_SIZE,
             sprite.w || TILE_SIZE,
             sprite.h || TILE_SIZE,
-            sprite.image,
             tileId,
+            sprite.image,
             sprite.solid || false
           );
         }
@@ -149,20 +151,49 @@ const Game = () => {
         const fps = Math.round(1 / delta);
 
         if (blocks.length > 0) {
-          if (items) {
-            items.forEach((item) => {
-              if (item.animate) item.animate(delta);
-            });
+          if (entities) {
+            for (let i = entities.length - 1; i >= 0; i--) {
+              const entity = entities[i];
+              // Check if it's a Fireball and needs full update
+              if (entity instanceof Fireball) {
+                entity.update(delta);
+              } else if (entity.animate) {
+                entity.animate(delta);
+              }
+
+              // Remove collected or marked for removal entities
+              if (entity.isCollected || entity.remove) {
+                setEntities(prev => prev.filter((_, index) => index !== i));
+              }
+            }
+          }
+
+          // Remove broken blocks
+          for (let i = entities.length - 1; i >= 0; i--) {
+            if (entities[i].isCollected) {
+              entities.splice(i, 1);
+            }
           }
 
           blocks.forEach((block) => {
             if (block.animate) block.animate(delta);
             block.update?.(delta);
+
+            if (block.fragments && block.fragments.length > 0) {
+              block.updateAllFragments();
+            }
           });
+
+          // Remove broken blocks
+          for (let i = blocks.length - 1; i >= 0; i--) {
+            if (blocks[i].broken && (!blocks[i].fragments || blocks[i].fragments.length === 0)) {
+              blocks.splice(i, 1);
+            }
+          }
 
           if (players) {
             players.forEach((player) => {
-              player.update?.(delta, items);
+              player.update?.(delta, entities);
               player.animate?.(delta);
             });
           }
@@ -175,7 +206,7 @@ const Game = () => {
 
     gameLoop.start();
     return () => gameLoop.stop();
-  }, [players, items]);
+  }, [players, entities]);
 
   if (blocks.length === 0) {
     return (
@@ -194,6 +225,7 @@ const Game = () => {
       <DrawLevel
         ref={drawLevelRef}
         players={players}
+        entities={entities}
         cameraX={camera.cameraX}
         backgroundColor={levelBackground}
         style={{

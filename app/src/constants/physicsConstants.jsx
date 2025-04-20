@@ -11,8 +11,8 @@ export const ACC_RUN     = 200.390625;
 export const DEC_REL     = 110.8125;
 export const DEC_SKID    = 165.625;
 
-export const MAX_WALK    = 120.75;
-export const MAX_RUN     = 153.75;
+export const MAX_WALK    = 150.75;
+export const MAX_RUN     = 183.75;
 
 // vertical / gravity
 export const STOP_FALL   = 1575;

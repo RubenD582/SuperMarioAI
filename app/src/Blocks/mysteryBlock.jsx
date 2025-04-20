@@ -21,8 +21,8 @@ export const BlockFrames = [MysteryBlock1, MysteryBlock2, MysteryBlock3];
 export const EmptyBlockFrame = [EmptyBlock];
 
 export default class MysteryBlock extends Block {
-  constructor(x, y, width, height, image, index, collision, solid = true, itemType = 'mushroom') {
-    super(x, y, width, height, image, index, solid);
+  constructor(x, y, width, height, image, collision, solid = true, itemType = 'mushroom') {
+    super(x, y, width, height, "mystery", image, solid);
 
     this.collision = collision;
     this.itemType = itemType;
@@ -83,6 +83,7 @@ export default class MysteryBlock extends Block {
     // Draw the block
     if (this.empty) {
       this.currentBlockImage = this.animations['empty'][0];
+      this.type = "empty";
     } else {
       this.currentBlockImage = this.animations['cycle'][this.blockFrameIndex];
     }
@@ -98,10 +99,16 @@ export default class MysteryBlock extends Block {
     super.draw(ctx);
   }
 
-  onBlockHit(addItemCallback) {
+  onBlockHit(addItemCallback, isBig) {
+    if (isBig) {
+      this.itemType = 'flower';
+    } else {
+      this.itemType = 'mushroom';
+    }
+
     if (!this.empty) {
       this.empty = true;
-      this.spawnItem(addItemCallback);  // Pass callback here
+      this.spawnItem(addItemCallback);
       return this.points;
     }
     return 0;

@@ -1,5 +1,9 @@
+import fragment from '../assets/Sprites/fragment.png';
+import {TILE_SIZE} from "../constants/constants.jsx";
+
 export default class Block {
-  constructor(x, y, width, height, image, index, solid = false) {
+  constructor(x, y, width, height, type, image, solid = false) {
+    this.type = type;
     this.x = x;
     this.y = y;
     this.image = image;
@@ -8,7 +12,6 @@ export default class Block {
     this.height = height;
 
     this.solid = solid;
-    this.index = index;
 
     // Store the original position
     this.originalY = y;
@@ -18,7 +21,11 @@ export default class Block {
     this.movingDown = false;
     this.moveUpAmount = 0;
     this.maxMoveUp = 10;
-    this.moveSpeed = 0.75;
+    this.moveSpeed = 0;
+
+    // Broken state
+    this.broken = false;
+    this.fragments = [];
   }
 
   setImage(image) {
@@ -26,18 +33,27 @@ export default class Block {
   }
 
   draw(ctx) {
+    if (this.broken) return;
+
     if (this.image && this.image.complete) {
-      ctx.drawImage(
-        this.image,
-        this.x,
-        this.y,
-        this.width,
-        this.height
-      );
+      ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
     }
   }
 
-  // Method to get the bounding box of the block
+  drawAllFragments(ctx) {
+    for (const fragment of this.fragments) {
+      fragment.draw(ctx);
+    }
+  }
+
+  updateAllFragments() {
+    for (const fragment of this.fragments) {
+      fragment.update();
+    }
+
+    this.fragments = this.fragments.filter(f => f.y < 1000);
+  }
+
   getBoundingBox() {
     return {
       left: this.x,
@@ -47,7 +63,6 @@ export default class Block {
     };
   }
 
-  // Method to move the block upwards
   animateHit() {
     if (!this.movingUp && !this.movingDown) {
       this.movingUp = true;
@@ -55,30 +70,74 @@ export default class Block {
     }
   }
 
-  // Method to update the block's position if it's moving
+  break() {
+    this.broken = true;
+
+    const size = TILE_SIZE / 1.75;
+    const centerX = this.x + this.width / 2 - size / 2;
+    const centerY = this.y + this.height / 2 - size / 2;
+
+    const fragmentVelocities = [
+      [-1, -4],  // top-left
+      [1, -4],   // top-right
+      [-1.25, -1.5],  // bottom-left
+      [1.25, -1.5],   // bottom-right
+    ];
+
+    for (let [vx, vy] of fragmentVelocities) {
+      this.fragments.push(new Fragment(centerX, centerY, vx, vy, size));
+    }
+  }
+
   update() {
     if (this.movingUp) {
-      // Move the block up until it reaches the max height
       if (this.moveUpAmount < this.maxMoveUp) {
         this.y -= this.moveSpeed;
         this.moveUpAmount += this.moveSpeed;
       } else {
-        // Start moving down when max height is reached
         this.movingUp = false;
         this.movingDown = true;
       }
     }
 
     if (this.movingDown) {
-      // Move the block back down to its original position
       if (this.moveUpAmount > 0) {
         this.y += this.moveSpeed;
         this.moveUpAmount -= this.moveSpeed;
       } else {
-        // Reset the block to its original position and stop moving
         this.y = this.originalY;
         this.movingDown = false;
       }
     }
+  }
+}
+
+export class Fragment {
+  constructor(x, y, vx, vy, size = 8, gravity = 0.1) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.size = size;
+    this.gravity = gravity;
+    this.rotation = Math.random() * Math.PI * 2;
+    this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+    this.image = new Image();
+    this.image.src = fragment;
+  }
+
+  update() {
+    this.vy += this.gravity;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.rotation += this.rotationSpeed;
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x + this.size / 2, this.y + this.size / 2);
+    ctx.rotate(this.rotation);
+    ctx.drawImage(this.image, -this.size / 2, -this.size / 2, this.size, this.size);
+    ctx.restore();
   }
 }

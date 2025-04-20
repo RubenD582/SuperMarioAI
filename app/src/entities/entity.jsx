@@ -1,7 +1,12 @@
+import {MAX_RUN, MAX_WALK} from "../constants/physicsConstants.jsx";
+
 export default class Entity {
   constructor(x, y, width, height) {
-    this.x = x;
     this.y = y;
+    this.x = x;
+
+    this.vx = 0;
+    this.vy = 0;
 
     this.width = width;
     this.height = height;
@@ -23,10 +28,10 @@ export default class Entity {
     }
   }
 
-  animate(deltaTime) {
+  animate(deltaTime, duration) {
     this.frameTime += deltaTime;
 
-    if (this.currentFrames.length > 1 && this.frameTime >= this.frameDuration) {
+    if (this.currentFrames.length > 1 && this.frameTime >= duration) {
       this.currentFrame = (this.currentFrame + 1) % this.currentFrames.length;
       this.frameTime = 0;
     }
@@ -57,5 +62,9 @@ export default class Entity {
     ctx.strokeStyle = 'red';
     ctx.strokeRect(this.x, this.y, this.width, this.height);
     ctx.restore();
+  }
+
+  map(x, inMin, inMax, outMin, outMax) {
+    return ((x - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
   }
 }
