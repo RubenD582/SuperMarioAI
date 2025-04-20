@@ -12,6 +12,7 @@ import setupKeyboardInput, { subscribeToKeys } from "../utils/keyboardInput.jsx"
 import { FRAME_DURATION } from "../constants/constants.jsx";
 import createGameLoop from "../utils/gameLoop.jsx";
 import Fireball from "../entities/fireball.jsx";
+import Goomba from "../entities/goomba.jsx";
 
 export let blocks = []; // Global blocks
 
@@ -129,6 +130,14 @@ const Game = () => {
             collisionRef.current,
             sprite.solid || false
           );
+        } else if (tileId === "goomba") {
+          const goomba = new Goomba(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            collisionRef.current,
+          );
+
+          addItemCallback(goomba);
         } else {
           return new Block(
             colIndex * TILE_SIZE,
@@ -157,6 +166,9 @@ const Game = () => {
               // Check if it's a Fireball and needs full update
               if (entity instanceof Fireball) {
                 entity.update(delta);
+              } else if (entity instanceof Goomba) {
+                entity.update(delta);
+                entity.animate(delta);
               } else if (entity.animate) {
                 entity.animate(delta);
               }
