@@ -1,38 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Press+Start+2P&display=swap" rel="stylesheet">
-    <title>Super Mario Clone</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            background-color: black;
-            font-family: "Press Start 2P", serif;
-            font-style: normal;
-            color: white;
-        }
-        canvas {
-            border: 1px solid black;
-            background-color: #5C94FC;
-        }
-    </style>
-</head>
-<body>
-    <canvas id="gameCanvas" width="864" height="512"></canvas>
-    <canvas id="vision" width="240" height="240" style="margin-top: 50px;"></canvas>
-    <script src="block.js"></script>
-    <script src="Blocks/MysteryBlock.js"></script>
-    <script src="neuralNetwork.js"></script>
-    <script src="goomba.js"></script>
-    <script src="player.js"></script>
-    <script src="script.js"></script>
-</body>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Press+Start+2P&display=swap" rel="stylesheet">
+        <title>Super Mario Clone</title>
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                margin: 0;
+                background-color: black;
+                font-family: "Press Start 2P", serif;
+                font-style: normal;
+                color: white;
+            }
+
+            canvas {
+                border: 1px solid black;
+                background-color: #5C94FC;
+            }
+
+            #level-selection {
+                margin-top: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="gameCanvas" width="864" height="512"></canvas>
+
+        <div id="level-selection">
+            <button id="level1-1">Level 1-1</button>
+            <button id="level1-2">Level 1-2</button>
+            <button onclick="window.location.href='/Builder/world-builder.html'">World Builder</button>
+        </div>
+
+        <!--    Canvas to show what the player / AI sees-->
+        <canvas id="vision" width="240" height="240" style="margin-top: 50px;"></canvas>
+
+        <!--    Import maps-->
+        <script src="Maps/level_1-1.js"></script>
+
+        <!--    Import scripts-->
+        <script src="block.js"></script>
+        <script src="Blocks/MysteryBlock.js"></script>
+        <script src="NeuralNetwork.js"></script>
+        <script src="goomba.js"></script>
+        <script src="player.js"></script>
+        <script src="script.js"></script>
+    </body>
 </html>

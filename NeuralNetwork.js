@@ -7,12 +7,12 @@ class NeuralNetwork {
 
         // Initialize weights with He initialization
         this.inputHidden = Array.from({ length: this.input }, () =>
-            Array.from({ length: this.hidden }, () => 
+            Array.from({ length: this.hidden }, () =>
                 (Math.random() * 2 - 1) * Math.sqrt(2 / this.input)
             )
         );
         this.hiddenOutput = Array.from({ length: this.hidden }, () =>
-            Array.from({ length: this.output }, () => 
+            Array.from({ length: this.output }, () =>
                 (Math.random() * 2 - 1) * Math.sqrt(2 / this.hidden)
             )
         );
@@ -69,18 +69,18 @@ class NeuralNetwork {
                     while (v === 0) v = Math.random();
                     return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
                 };
-                
+
                 return value + gaussian() * mutationStrength;
             }
             return value;
         };
 
         // Mutate weights and biases
-        this.inputHidden = this.inputHidden.map(row => 
+        this.inputHidden = this.inputHidden.map(row =>
             row.map(weight => mutate(weight))
         );
-        
-        this.hiddenOutput = this.hiddenOutput.map(row => 
+
+        this.hiddenOutput = this.hiddenOutput.map(row =>
             row.map(weight => mutate(weight))
         );
 
@@ -90,7 +90,7 @@ class NeuralNetwork {
 
     crossover(other) {
         const child = new NeuralNetwork(this.input, this.hidden, this.output);
-        
+
         // Interpolation crossover
         const interpolate = (a, b) => {
             const ratio = Math.random();

@@ -1,24 +1,7 @@
 // Level map represented as a 2D array
-const map = [
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 10, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  11, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 10, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0,  0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 10, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 2,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 3, 3, 3, 3, 3,  3,  3, 3, 0,  0, 0, 3, 3, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 2, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 3, 3, 3,  0, 0, 0, 0, 3, 2, 2, 3, 0,  0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 2, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 13, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 2, 0, 0,  0, 3, 2, 3,  2, 3, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 7, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 3, 2, 3, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0,  0, 2,  0, 0, 2, 0, 0, 2, 0, 0, 0,  0, 0, 3,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 3, 3, 0, 0,  0, 0, 0, 0, 21, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 21,  0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 3, 3, 2, 3,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  6, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 4,  0, 0, 0,  0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4,  0,  0, 0,  0, 4, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [9, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  5, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 4, 4,  0, 0, 0,  0, 4, 4, 0, 9, 0, 0, 0, 0, 4, 4, 4,  0,  0, 0,  0, 4, 4, 0, 0, 0, 0, 5, 0,  0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 5, 0,  0, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 9, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 9, 0,  0, 0, 0, 0, 17, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 18, 0, 0, 9, 0, 0,  0, 0,  0, 0, 0, 16, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 18, 0, 0, 0, 0, 9, 0, 0, 0,  0, 0, 0, 16, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 4, 4, 4,  0, 0, 0,  0, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4,  0,  0, 0,  0, 4, 4, 4, 9, 0, 0, 0, 0,  0, 0, 0, 16, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 4,  0,  0, 0, 0,  0, 0, 0, 0, 0, 0, 0],
-    [1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1, 19, 0, 0, 19, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 19,  0, 0, 0, 19, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 19,  0, 0, 19, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1],
-    [1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1,  0, 0, 0,  0, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  0,  0, 0, 0,  0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  0,  0, 0,  0, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1],
-    [1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1,  0, 0, 0,  0, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  0,  0, 0, 0,  0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  0,  0, 0,  0, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1,  1, 1, 1,  1, 1, 1, 1, 1, 1, 1],
-]; 
+let map = level_1_1;
 
-const distance = document.getElementById('distance');
+
 const canvas = document.getElementById('gameCanvas');
 const vision = document.getElementById('vision');
 const ctx = canvas.getContext('2d');
@@ -28,38 +11,35 @@ const visionCtx = vision.getContext('2d');
 visionCtx.imageSmoothingEnabled = true;
 
 const SCALE = 2;
-
 const tileHeight = 16 * SCALE;
 const tileWidth = 16 * SCALE; 
 
 const TILE_SIZE = tileWidth;
 
 const TARGET_FPS = 240;
-const FRAME_DURATION = 1000 / TARGET_FPS; 
-
-const POPULATION = 10;
+const FRAME_DURATION = 1000 / TARGET_FPS;
 
 let drawHitBox = false;
 
-let previousTime = 0;
-let frameTimer; 
-
-
+// To display the current generation, the AI is on
 let generation = 0;
 
-let players = Array.from({ length: POPULATION }, () => new Player(84, 350, 32, 32));
+const POPULATION = 10;
+let players = Array.from(
+    { length: POPULATION },
+    () => new Player(84, 350, 32, 32)
+);
+
 let enemies = [];
 let died = [];
 
-let currentFrame = 0;
-let frameTime = 0;   
-
-let animationSpeedMultiplier = 0;
 let lastFpsUpdate = performance.now();
 let lastFrameTime = performance.now();
-let accumulator = 0;
+
 let frameCount = 0;
 let fps = 0;
+
+
 
 let camera = {
     x: 0,
@@ -105,10 +85,11 @@ const imageUrls = [
     'Sprites/Edge.png',             // 19
     'Sprites/title.png',            // 20
     'Sprites/Edge2.png',            // 21
+    'Sprites/UndergroundBlock.png', // 22
+    'Sprites/UndergroundBrick.png'  // 23
 ]
 
 let loadedImages = {};
-let imagesToLoad = imageUrls.length;
 
 const preloadImages = () => {
     return Promise.all(imageUrls.map((url, index) => {
@@ -158,10 +139,15 @@ const handleKeyChange = (e, state) => {
                 break;
             case 'KeyL':
                 camera.keys.keft = state;
+                break;
             case 'KeyK':
                 camera.keys.right = state;
+                break;
             case 'KeyR':
                 newPopulation(died);
+                break;
+            default:
+                break;
         }
     });
 };
@@ -176,7 +162,6 @@ const loadBlocksAndEntities = () => {
     });
 };
 
-let previousDiversity = 0;
 let previousAverageDistance = 0;
 const DISTANCE_CHANGE_THRESHOLD = 1;
 
@@ -227,7 +212,7 @@ function gameLoop() {
             }
         } else {
             const distanceChange = Math.abs(previousAverageDistance - currentAverageDistance).toFixed(4);
-            console.log(parseFloat(distanceChange));
+            // console.log(parseFloat(distanceChange));
             if (parseFloat(distanceChange) === 0) {
                 newPopulation(players.concat(died));
             }
@@ -258,7 +243,6 @@ function gameLoop() {
     }
 }
 
-
 function newPopulation(population) {
     // Calculate fitness scores with distance and survival time
     population.forEach(player => {
@@ -282,7 +266,7 @@ function newPopulation(population) {
     const newGeneration = [];
     
     // Elitism: Keep the best performers
-    const eliteCount = Math.max(1, Math.floor(POPULATION * 0.1));  // Keep top 10%
+    const eliteCount = Math.max(1, Math.floor(POPULATION * 0.1));
     for (let i = 0; i < eliteCount; i++) {
         const elite = new Player(84, 350, 32, 32);
         elite.neuralNetwork = population[i].neuralNetwork.clone();
@@ -322,9 +306,6 @@ function newPopulation(population) {
         }
     }
 
-    // evaluateProgress(died);
-
-    // Reset game state
     players = newGeneration;
     enemies = [];
     blocks = [];
@@ -335,12 +316,10 @@ function newPopulation(population) {
 }
 
 function tournamentSelection(population, tournamentSize = 3) {
-    // Weight selection by fitness rank
     const tournament = [];
     const populationSize = population.length;
     
     for (let i = 0; i < tournamentSize; i++) {
-        // Bias towards higher-ranked individuals
         const rank = Math.floor(Math.random() ** 2 * populationSize);
         tournament.push(population[rank]);
     }
@@ -353,49 +332,28 @@ function tournamentSelection(population, tournamentSize = 3) {
 function calculateDiversity(population) {
     const meanFitness = population.reduce((sum, player) => sum + player.fitness, 0) / population.length;
 
-    // Calculate variance in distances
     const fitnessVariance = population.reduce((sum, player) => {
         const deviation = player.fitness - meanFitness;
         return sum + Math.pow(deviation, 2);
     }, 0) / population.length;
 
-    // Standard deviation is the square root of variance, representing diversity
     return Math.sqrt(fitnessVariance);
 }
   
 
-function displayInfo(furthest) {
+function displayInfo() {
     ctx.fillStyle = 'white';
     ctx.font = '14px "Press Start 2P", monospace';
     
     ctx.fillText(`GENERATION:${generation}`, 10, 25);
     ctx.fillText(`POPULATION:${players.length}`, 250, 25);
-    // ctx.fillText(`SCORE:${furthest.score.toString().padStart(4, '0')}`, 140, 25);
-    // ctx.fillText(`${Math.max(0, Math.min((furthest.x / (tileWidth * map[0].length - (12 * tileWidth)) * 100).toFixed(1), 100))}%`, 297, 25);
 
     ctx.fillText(`FPS: ${fps.toFixed(0)}`, canvas.width - 120, 25);
 }
 
 function renderGame(deltaTime) {
-    // const startRow = 0;
-    // const endRow   = blocks.length;
-    // const startCol = Math.max(0, Math.floor(camera.x / tileWidth));
-    // const endCol   = Math.min(blocks[0].length, Math.ceil((camera.x + canvas.width) / tileWidth) + 1);
-
-    // for (let row = startRow; row < endRow; row++) {
-    //     for (let col = startCol; col < endCol; col++) {
-    //         const block = blocks[row][col];
-    //         if (block && inViewport(block, camera)) {
-    //             block.draw(ctx, camera);
-    //             block.update();
-                
-    //             if (block instanceof MysteryBlock) {
-    //                 block.animate(deltaTime);
-    //             }
-    //         }
-    //     }
-    // }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     blocks.forEach(row => {
         row.forEach(block => {
             if (block) {
@@ -411,33 +369,33 @@ function renderGame(deltaTime) {
 }
 
 // Helper function to ensure proper block visibility checking
-function inViewport(block, camera) {
-    const buffer = tileWidth;
-    const viewportLeft = camera.x - buffer;
-    const viewportRight = camera.x + canvas.width + buffer;
+// function inViewport(block, camera) {
+//     const buffer = tileWidth;
+//     const viewportLeft = camera.x - buffer;
+//     const viewportRight = camera.x + canvas.width + buffer;
+//
+//     return block.x + (block.width || tileWidth) > viewportLeft &&
+//         block.x < viewportRight;
+// }
 
-    return block.x + (block.width || tileWidth) > viewportLeft &&
-        block.x < viewportRight;
-}
-
-function drawGridLines() {
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 2;
-
-    for (let col = 0; col <= blocks[0].length; col++) { 
-        ctx.beginPath();
-        ctx.moveTo(col * tileWidth - camera.x, 0);
-        ctx.lineTo(col * tileWidth - camera.x, ctx.canvas.height);
-        ctx.stroke();
-    }
-
-    for (let row = 0; row <= blocks.length; row++) { 
-        ctx.beginPath();
-        ctx.moveTo(0, row * tileHeight);
-        ctx.lineTo(ctx.canvas.width, row * tileHeight);
-        ctx.stroke();
-    }
-}
+// function drawGridLines() {
+//     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+//     ctx.lineWidth = 2;
+//
+//     for (let col = 0; col <= blocks[0].length; col++) {
+//         ctx.beginPath();
+//         ctx.moveTo(col * tileWidth - camera.x, 0);
+//         ctx.lineTo(col * tileWidth - camera.x, ctx.canvas.height);
+//         ctx.stroke();
+//     }
+//
+//     for (let row = 0; row <= blocks.length; row++) {
+//         ctx.beginPath();
+//         ctx.moveTo(0, row * tileHeight);
+//         ctx.lineTo(ctx.canvas.width, row * tileHeight);
+//         ctx.stroke();
+//     }
+// }
 
 async function startGame() {
     await preloadImages();
@@ -447,4 +405,4 @@ async function startGame() {
     setInterval(gameLoop, FRAME_DURATION);
 }
 
-startGame();
+startGame().then(_ => console.log("DONE!"));
