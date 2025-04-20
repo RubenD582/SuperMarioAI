@@ -1,7 +1,8 @@
 import React, {useEffect, useRef} from 'react';
 import { blocks } from '../screens/game.jsx';
+import Fireball from "../entities/fireball.jsx";
 
-const DrawLevel = React.forwardRef(({ players = [], backgroundColor = '#000000', cameraX = 0, style = {} }, ref) => {
+const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundColor = '#000000', cameraX = 0, style = {} }, ref) => {
   const canvasRef = useRef(null);
   const scale = window.devicePixelRatio || 1;
 
@@ -79,11 +80,27 @@ const DrawLevel = React.forwardRef(({ players = [], backgroundColor = '#000000',
     const leftBound = cameraXRef.current - 50;
     const rightBound = cameraXRef.current + screenWidth + 50;
 
+    for (const entity of entities) {
+      if (entity instanceof Fireball) continue;
+
+      entity.draw(ctx);
+    }
+
     // Draw each block with the camera context
     for (const block of blocks) {
       // Only draw if block is in the visible area
       if (block.x + block.width >= leftBound && block.x <= rightBound) {
         block.draw(ctx);
+        if (block.fragments && block.fragments.length > 0) {
+          block.drawAllFragments(ctx);
+        }
+      }
+    }
+
+    // Draw fireball on top of the tiles
+    for (const entity of entities) {
+      if (entity instanceof Fireball) {
+        entity.draw(ctx);
       }
     }
 

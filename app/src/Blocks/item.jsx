@@ -15,28 +15,12 @@ class Item {
     this.height = TILE_SIZE;
     this.isCollected = false;
 
-    // Shared animation resources
     this.itemAnimations = this.loadItemAnimations();
     this.itemFrameIndex = 0;
     this.itemFrameTime = 0;
-    this.itemFrameDuration = 0.1;
-
-    // Track the number of items for shared animation
-    Item.totalItems = (Item.totalItems || 0) + 1;
-
-    // Create a global timer for synchronization
-    Item.globalFrameTime = 0;
+    this.itemFrameDuration = 0.2; // each frame lasts 0.2s
   }
 
-  // Static method to update global frame timer
-  static updateGlobalFrameTime(deltaTime) {
-    Item.globalFrameTime += deltaTime;
-    if (Item.globalFrameTime >= Item.frameDuration) {
-      Item.globalFrameTime = 0; // Reset global timer after one cycle
-    }
-  }
-
-  // Load item-specific animations
   loadItemAnimations() {
     const flowerAnimations = [
       this.loadImage(fireFlower1),
@@ -52,7 +36,6 @@ class Item {
     return this.itemType === 'flower' ? flowerAnimations : mushroomAnimation;
   }
 
-  // Load an image
   loadImage(src) {
     const img = new Image();
     img.src = src;
@@ -61,25 +44,25 @@ class Item {
   }
 
   animate(deltaTime) {
-    Item.updateGlobalFrameTime(deltaTime);
+    if (this.itemAnimations.length > 1) {
+      this.itemFrameTime += deltaTime;
 
-    if (Item.globalFrameTime === 0) {
-      this.itemFrameIndex = (this.itemFrameIndex + 1) % this.itemAnimations.length;
+      if (this.itemFrameTime >= this.itemFrameDuration) {
+        this.itemFrameTime = 0;
+        this.itemFrameIndex = (this.itemFrameIndex + 1) % this.itemAnimations.length;
+      }
     }
   }
 
-  // Draw the item
   draw(ctx) {
     if (!this.isCollected) {
-      const currentAnim = this.itemAnimations;
-      const frame = currentAnim[this.itemFrameIndex];
+      const frame = this.itemAnimations[this.itemFrameIndex];
       const itemX = this.x + (this.width - TILE_SIZE) / 2;
       const itemY = this.y;
       ctx.drawImage(frame, itemX, itemY, TILE_SIZE, TILE_SIZE);
     }
   }
 
-  // Mark the item as collected
   collect() {
     this.isCollected = true;
   }
@@ -87,12 +70,9 @@ class Item {
 
 export class Flower extends Item {
   constructor(x, y) {
-    // The 0.16 helps to now show the item at the bottom when the block is animating
     super(x, y + TILE_SIZE - TILE_SIZE * 0.16, 'flower');
-    this.dy = -50;
-
+    this.dy = -25;
     this.isMoving = true;
-
     this.blockY = y;
   }
 
@@ -100,53 +80,50 @@ export class Flower extends Item {
     super.animate(deltaTime);
 
     if (this.isMoving) {
-      this.y += this.dy * deltaTime; // Scaled for smoother movement
+      this.y += this.dy * deltaTime;
 
-      // Correct stopping point
       const targetY = this.blockY + 2;
-
       if (this.y <= targetY) {
         this.y = targetY;
         this.isMoving = false;
       }
     }
   }
-
-  // Draw the item (flower)
-  draw(ctx) {
-    if (!this.isCollected) {
-      const currentAnim = this.itemAnimations;
-      const frame = currentAnim[this.itemFrameIndex];
-      const itemX = this.x + (this.width - TILE_SIZE) / 2;
-      const itemY = this.y;
-      ctx.drawImage(frame, itemX, itemY, TILE_SIZE, TILE_SIZE);
-    }
-  }
 }
 
 export class Mushroom extends Item {
   constructor(x, y, collision) {
-    super(x, y, 'mushroom');
+    super(x, y + TILE_SIZE - TILE_SIZE * 0.16, 'mushroom');
 
-    this.vx = 100; // horizontal speed
-    this.vy = 0;   // vertical speed
-    this.gravity = 1000; // pixels/sec^2
+    this.dy = -25;
+    this.vx = 75;
+    this.vy = 0;
+    this.gravity = 1000;
     this.grounded = false;
     this.collision = collision;
+
+    this.isMoving = true;
+    this.blockY = y;
   }
 
   animate(deltaTime) {
     super.animate(deltaTime);
 
-    // Gravity
-    this.vy += this.gravity * deltaTime;
+    if (this.isMoving) {
+      this.y += this.dy * deltaTime;
 
-    // Apply velocity
-    this.x += this.vx * deltaTime;
-    this.collision.checkHorizontalCollisions(this);
+      const targetY = this.blockY + 2;
+      if (this.y <= targetY) {
+        this.y = targetY;
+        this.isMoving = false;
+      }
+    } else {
+      this.vy += this.gravity * deltaTime;
+      this.x += this.vx * deltaTime;
+      this.collision.checkHorizontalCollisions(this);
 
-    this.y += this.vy * deltaTime;
-    this.collision.checkVerticalCollisions(this);
+      this.y += this.vy * deltaTime;
+      this.collision.checkVerticalCollisions(this);
+    }
   }
 }
-
