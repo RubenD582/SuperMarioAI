@@ -6,7 +6,7 @@ import fireFlower4 from '../assets/Sprites/Flower4.png';
 
 import { TILE_SIZE } from '../constants/constants.jsx';
 
-class Item {
+export default class Item {
   constructor(x, y, itemType) {
     this.x = x;
     this.y = y;

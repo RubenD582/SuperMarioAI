@@ -1,18 +1,18 @@
 import Entity from './Entity';
 
-import Goomba1 from '../assets/Sprites/Goomba_Walk1.png';
-import Goomba2 from '../assets/Sprites/Goomba_Walk2.png';
-import GoombaFlat from '../assets/Sprites/Goomba_Flat.png';
+import Koopa1 from '../assets/Sprites/Koopa_Walk1.png';
+import Koopa2 from '../assets/Sprites/Koopa_Walk2.png';
+import KoopaShell from '../assets/Sprites/Koopa_Shell.png';
 
-export const GoombaFrames  = [Goomba1, Goomba2];
-export const GoombaFlatFrames = [GoombaFlat];
+export const KoopaFrames  = [Koopa1, Koopa2];
+export const KoopaShellFrames = [KoopaShell];
 
-export default class Goomba extends Entity {
+export default class Koopa extends Entity {
   constructor(x, y, collision) {
     super(x, y, 32, 32);
 
     this.collision = collision;
-    this.vx = -50;
+    this.vx = -40;
     this.vy = 0;
 
     this.grounded = true;
@@ -21,8 +21,6 @@ export default class Goomba extends Entity {
     this.gravity = 1000;
 
     this.keys = { left: false, right: false, up: false, down: false, b: false };
-
-    this.direction = 'left';
 
     this.currentAnimation = 'walk';
     this.animations = {};
@@ -36,8 +34,8 @@ export default class Goomba extends Entity {
   }
 
   preloadAnimations() {
-    this.animations.walk  = this.preloadImages(GoombaFrames);
-    this.animations.flat  = this.preloadImages(GoombaFlatFrames);
+    this.animations.walk  = this.preloadImages(KoopaFrames);
+    this.animations.shell  = this.preloadImages(KoopaShellFrames);
   }
 
   preloadImages(srcArray) {
@@ -75,19 +73,15 @@ export default class Goomba extends Entity {
         }
       });
 
+      if (this.vx < 0) this.facing = "right";
+      if (this.vx > 0) this.facing = "left";
     } else {
       if (this.killedByFireball) {
-        // Let it fall freely without collisions
         this.y += this.vy * delta;
         this.vy += this.gravity * delta;
 
         if (this.y > 1000) this.remove = true;
 
-      } else {
-        this.deathTimer += delta * 1000;
-        if (this.deathTimer >= 250) {
-          this.remove = true;
-        }
       }
     }
   }
@@ -110,7 +104,7 @@ export default class Goomba extends Entity {
       this.vy = -300;
       this.deathTimer = 0;
     } else {
-      this.currentAnimation = 'flat';
+      this.currentAnimation = 'shell';
       this.isDead = true;
       this.deathTimer = 0;
       this.vx = 0;

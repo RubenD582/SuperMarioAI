@@ -1,107 +1,45 @@
-export default function createGameLoop({ onUpdate, onRender, targetFps = 144 }) {
-  let running = false;
-  let lastUpdateTime = 0;
-  let lastRenderTime = 0;
+export default function createGameLoop({ onUpdate, maxStep = 0.05 }) {
+  let lastTimestamp = performance.now();
+  let ticks = [];
   let gameTime = 0;
-  let updateIntervalId = null;
-  let animFrameId = null;
+  let animationFrameId;
+  const MAX_TICKS = 120;
 
-  const updateInterval = 1000 / targetFps; // ~6.94ms for 144Hz
-
-  let frameCount = 0;
-  let updateCount = 0;
-  let fpsTimer = 0;
-  let currentFps = 0;
-  let currentUps = 0; // Updates per second
-
-  // Separate update and render functions
-  const update = (timestamp) => {
-    const now = timestamp || performance.now();
-
-    if (lastUpdateTime === 0) {
-      lastUpdateTime = now;
+  const loop = (current) => {
+    if (current <= lastTimestamp) {
+      animationFrameId = requestAnimationFrame(loop);
       return;
     }
 
-    const delta = (now - lastUpdateTime) / 1000; // seconds
-    lastUpdateTime = now;
+    let rawDelta = (current - lastTimestamp) / 1000;
 
-    const cappedDelta = Math.min(delta, 0.1);
+    // Final clamp
+    let delta = Math.max(1 / 144, Math.min(rawDelta, 0.2)); // max 144fps, min 5fps
 
-    gameTime += cappedDelta;
+    lastTimestamp = current;
 
-    updateCount++;
-    fpsTimer += delta;
-    if (fpsTimer >= 0.5) {
-      currentFps = Math.round(frameCount / fpsTimer);
-      currentUps = Math.round(updateCount / fpsTimer);
-      frameCount = 0;
-      updateCount = 0;
-      fpsTimer = 0;
+    let gameDelta = Math.min(delta, maxStep);
+    gameTime += gameDelta;
+
+    ticks.push(delta);
+    if (ticks.length > MAX_TICKS) {
+      ticks.splice(0, ticks.length - MAX_TICKS);
     }
 
-    // Execute update logic
     if (onUpdate) {
-      onUpdate({
-        delta: cappedDelta,
-        gameTime,
-        fps: currentFps,
-        ups: currentUps
-      });
+      const fps = Math.round(1 / delta);
+      onUpdate({ delta, gameDelta, gameTime, fps });
     }
+
+    animationFrameId = requestAnimationFrame(loop);
   };
 
-  const render = (timestamp) => {
-    if (!running) return;
-
-    const now = timestamp || performance.now();
-
-    if (lastRenderTime === 0) {
-      lastRenderTime = now;
-    }
-
-    const delta = (now - lastRenderTime) / 1000;
-    lastRenderTime = now;
-
-    frameCount++;
-
-    if (onRender) {
-      onRender({
-        delta,
-        gameTime,
-        fps: currentFps,
-        ups: currentUps
-      });
-    }
-
-    animFrameId = requestAnimationFrame(render);
-  };
-
-  const start = () => {
-    if (running) return;
-
-    running = true;
-    lastUpdateTime = 0;
-    lastRenderTime = 0;
-
-    updateIntervalId = setInterval(update, updateInterval);
-
-    animFrameId = requestAnimationFrame(render);
-  };
-
-  const stop = () => {
-    running = false;
-
-    if (updateIntervalId !== null) {
-      clearInterval(updateIntervalId);
-      updateIntervalId = null;
-    }
-
-    if (animFrameId !== null) {
-      cancelAnimationFrame(animFrameId);
-      animFrameId = null;
+  return {
+    start: () => {
+      animationFrameId = requestAnimationFrame(loop);
+    },
+    stop: () => {
+      cancelAnimationFrame(animationFrameId);
     }
   };
-
-  return { start, stop };
 }

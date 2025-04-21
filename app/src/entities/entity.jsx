@@ -38,22 +38,25 @@ export default class Entity {
   }
 
 
-  draw(ctx) {
+  draw(ctx, flipY = false) {
     if (!this.currentFrames.length) return;
 
     ctx.save();
-    const drawX = this.x;
 
-    if (this.facing === 'left') {
-      ctx.translate(drawX + this.width, this.y);
-      ctx.scale(-1, 1);
-    } else {
-      ctx.translate(drawX, this.y);
-    }
+    const drawX = this.x;
+    const drawY = this.y;
 
     const frame = this.currentFrames[this.currentFrame] || this.currentFrames[0];
 
-    ctx.drawImage(frame, 0, 0, this.width, this.height);
+    ctx.translate(drawX + this.width / 2, drawY + this.height / 2);
+
+    const scaleX = this.facing === 'left' ? -1 : 1;
+    const scaleY = flipY ? -1 : 1;
+
+    ctx.scale(scaleX, scaleY);
+
+    ctx.drawImage(frame, -this.width / 2, -this.height / 2, this.width, this.height);
+
     ctx.restore();
   }
 

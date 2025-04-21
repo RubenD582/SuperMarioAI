@@ -45,6 +45,8 @@ import MarioFireThrow from '../assets/Sprites/0/Mario_Fire_Throw.png';
 
 import {Flower, Mushroom} from "../Blocks/item.jsx";
 import {TILE_SIZE} from "../constants/constants.jsx";
+import Goomba from "./goomba.jsx";
+import Koopa from "./koopa.jsx";
 
 export const MarioSmallIdleFrames  = [MarioSmallIdle];
 export const MarioSmallRunFrames   = [MarioSmallRun1, MarioSmallRun2, MarioSmallRun3];
@@ -67,7 +69,7 @@ export const MarioFireThrowFrames = [MarioFireThrow];
 
 export default class Player extends Entity {
   constructor(x, y, collision, addItemCallback, color = 0) {
-    super(x, y, 32, 32);
+    super(x, y, TILE_SIZE, TILE_SIZE);
 
     this.addItemCallback = addItemCallback;
     this.collision = collision;
@@ -89,7 +91,15 @@ export default class Player extends Entity {
     this.isFireMario = false;
     this.isBigMario = false;
 
-    this.canFireball = false;
+    this.isInvincible = false;
+    this.invincibilityTimer = 0;
+    this.invincibilityDuration = 2000;
+    this.visibilityToggle = true;
+    this.flashInterval = 50;
+    this.lastFlashTime = 0;
+
+    this.prevX = this.X;
+    this.prevY = this.y;
   }
 
   preloadAnimations() {
@@ -121,7 +131,30 @@ export default class Player extends Entity {
   }
 
   update(delta, entities) {
+    this.prevY = this.y;
+    this.prevX = this.x;
+
     if (this.currentAnimation !== 'dead') {
+      if (this.isInvincible) {
+        // Convert delta to milliseconds if it's in seconds
+        const deltaMs = delta * 1000;
+
+        this.invincibilityTimer += deltaMs;
+        this.lastFlashTime += deltaMs;
+
+        // Flash effect - toggle visibility every flashInterval ms
+        if (this.lastFlashTime >= this.flashInterval) {
+          this.visibilityToggle = !this.visibilityToggle;
+          this.lastFlashTime = 0;
+        }
+
+        // End invincibility after duration
+        if (this.invincibilityTimer >= this.invincibilityDuration) {
+          this.isInvincible = false;
+          this.visibilityToggle = true; // Ensure player is visible
+        }
+      }
+
       if (this.keys.down && this.isBigMario && this.grounded) {
         this.animations.crouch = this.preloadImages(this.isFireMario ? MarioFireCrouchFrames : MarioBigCrouchFrames);
         this.currentAnimation = 'crouch';
@@ -279,7 +312,7 @@ export default class Player extends Entity {
 
     const fireballY = this.y + this.height * 0.1;
 
-    const fireball = new Fireball(fireballX, fireballY, this.facing, this.collision);
+    const fireball = new Fireball(fireballX, fireballY, this.facing, this.collision, this.vx);
     this.addItemCallback(fireball);
   }
 
@@ -355,6 +388,26 @@ export default class Player extends Entity {
         this.y < entity.y + entity.height &&
         this.y + this.height > entity.y
       ) {
+        if ((entity instanceof Goomba || entity instanceof Koopa) && !entity.isDead) {
+          const wasAboveEntity = this.prevY + this.height <= entity.y;
+          const isMovingDownward = this.vy > 0;
+          const isTouchingTop = this.y + this.height >= entity.y && this.y + this.height <= entity.y + 10;
+
+          if (wasAboveEntity && isMovingDownward && isTouchingTop) {
+            entity.dead();
+            this.vy = -175;
+            break;
+          } else if (!entity.isDead) {
+            if (this.isBigMario) {
+              this.shrink();
+            } else {
+              if (!this.isInvincible) {
+                this.dead();
+              }
+            }
+          }
+        }
+
         if (entity instanceof Mushroom) {
           entity.collect();
 
@@ -392,7 +445,6 @@ export default class Player extends Entity {
   }
 
   grow(delta) {
-    // Initialize growth state if we're just starting
     if (!this.growing) {
       this.growing = true;
       this.growthStage = 0;
@@ -459,10 +511,35 @@ export default class Player extends Entity {
     this.isBigMario = true;
   }
 
+  shrink() {
+    if (this.isInvincible) return;
+
+    this.growing = false;
+    this.growthStage = 0;
+    this.growthTimer = 0;
+
+    this.isBigMario = false;
+
+    this.isInvincible = true;
+    this.invincibilityTimer = 0;
+    this.visibilityToggle = true;
+    this.lastFlashTime = 0;
+
+    this.animations.idle = this.preloadImages(MarioSmallIdleFrames);
+    this.animations.run  = this.preloadImages(MarioSmallRunFrames);
+    this.animations.jump = this.preloadImages(MarioSmallJumpFrames);
+    this.animations.skid = this.preloadImages(MarioSmallSlideFrames);
+
+    this.height = TILE_SIZE;
+
+    this.originalY = this.y;
+  }
+
   dead() {
     this.currentAnimation = 'dead';
     this.vx = 0;
-    this.vy = -0x0400;  // Scale the death kick
+    this.vy = -200;
+
     this.isDead = true;
   }
 }

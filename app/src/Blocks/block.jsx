@@ -21,7 +21,7 @@ export default class Block {
     this.movingDown = false;
     this.moveUpAmount = 0;
     this.maxMoveUp = 10;
-    this.moveSpeed = 0;
+    this.moveSpeed = 1;
 
     // Broken state
     this.broken = false;

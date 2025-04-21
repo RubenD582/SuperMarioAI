@@ -16,10 +16,12 @@ import { TILE_SIZE } from '../constants/constants.jsx';
 import {blocks} from "../screens/game.jsx";
 
 export default class Fireball extends Entity {
-  constructor(x, y, direction, collision) {
+  constructor(x, y, direction, collision, vx) {
     super(x, y, TILE_SIZE * 0.5, TILE_SIZE * 0.5);
 
-    this.vx = direction === 'right' ? 360 : -360;
+    // Add player x velocity, for when a player is running and throwing the fireball
+    // so player velocity and fireball velocity
+    this.vx = vx + (direction === 'right' ? 360 : -360);
     this.vy = 500;
     this.gravity = 1000;
     this.bouncePower = -200;
@@ -62,10 +64,6 @@ export default class Fireball extends Entity {
     super.animate?.(deltaTime, this.explode ? 0.1 : 0.1);
 
     this.frameIndex = this.currentFrame;
-
-    if (this.currentAnimation === "explode") {
-      console.log(this.frameTime);
-    }
 
     if (
       this.frameTime >= 0.09 &&

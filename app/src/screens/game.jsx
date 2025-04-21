@@ -13,6 +13,7 @@ import { FRAME_DURATION } from "../constants/constants.jsx";
 import createGameLoop from "../utils/gameLoop.jsx";
 import Fireball from "../entities/fireball.jsx";
 import Goomba from "../entities/goomba.jsx";
+import Koopa from "../entities/koopa.jsx";
 
 export let blocks = []; // Global blocks
 
@@ -138,6 +139,14 @@ const Game = () => {
           );
 
           addItemCallback(goomba);
+        } else if (tileId === "koopa") {
+          const koopa = new Koopa(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            collisionRef.current,
+          );
+
+          addItemCallback(koopa);
         } else {
           return new Block(
             colIndex * TILE_SIZE,
@@ -154,38 +163,32 @@ const Game = () => {
   }, []);
 
   useEffect(() => {
-    const gameState = {
-      lastUpdateTime: 0,
-      accumulator: 0
-    };
-
     const gameLoop = createGameLoop({
-      targetFps: 144,
-      onUpdate: ({ delta, gameTime, fps, ups }) => {
-        // Occasionally log performance stats
-        if (Math.random() < 0.01) {
-          console.log(`Update rate: ${ups} ups, Render rate: ${fps} fps`);
-        }
-
+      maxStep: 0.05,
+      onUpdate: ({ delta, gameDelta, gameTime }) => {
+        const fps = Math.round(1 / delta);
         if (blocks.length > 0) {
           if (entities) {
             for (let i = entities.length - 1; i >= 0; i--) {
               const entity = entities[i];
+              // Check if it's a Fireball and needs full update
               if (entity instanceof Fireball) {
                 entity.update(delta);
-              } else if (entity instanceof Goomba) {
-                entity.update(delta);
+              } else if (entity instanceof Goomba || entity instanceof Koopa) {
+                entity.update(delta, entities.filter((entity) => entity instanceof Fireball));
                 entity.animate(delta);
               } else if (entity.animate) {
                 entity.animate(delta);
               }
 
+              // Remove collected or marked for removal entities
               if (entity.isCollected || entity.remove) {
                 setEntities(prev => prev.filter((_, index) => index !== i));
               }
             }
           }
 
+          // Remove broken blocks
           for (let i = entities.length - 1; i >= 0; i--) {
             if (entities[i].isCollected) {
               entities.splice(i, 1);
@@ -201,13 +204,13 @@ const Game = () => {
             }
           });
 
+          // Remove broken blocks
           for (let i = blocks.length - 1; i >= 0; i--) {
             if (blocks[i].broken && (!blocks[i].fragments || blocks[i].fragments.length === 0)) {
               blocks.splice(i, 1);
             }
           }
 
-          // Update players
           if (players) {
             players.forEach((player) => {
               player.update?.(delta, entities);
@@ -217,11 +220,6 @@ const Game = () => {
         }
 
         camera.updateCamera(delta);
-
-        gameState.lastUpdateTime = gameTime;
-      },
-
-      onRender: ({ delta, gameTime }) => {
         drawLevelRef.current?.renderFrame(delta);
       }
     });

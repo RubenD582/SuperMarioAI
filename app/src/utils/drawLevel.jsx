@@ -1,6 +1,9 @@
 import React, {useEffect, useRef} from 'react';
 import { blocks } from '../screens/game.jsx';
 import Fireball from "../entities/fireball.jsx";
+import Goomba from "../entities/goomba.jsx";
+import Item from "../Blocks/item.jsx";
+import Koopa from "../entities/koopa.jsx";
 
 const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundColor = '#000000', cameraX = 0, style = {} }, ref) => {
   const canvasRef = useRef(null);
@@ -64,50 +67,60 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     const ctx = canvas.getContext('2d');
     if (!ctx || !blocks.length) return;
 
-    // Calculate visible area
+    // Calculate visible area and bounds
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
+    const leftBound = cameraXRef.current - 50;
+    const rightBound = cameraXRef.current + screenWidth + 50;
 
+    // Apply scale and background settings
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.imageSmoothingEnabled = false;
 
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
 
+    // Save context state before moving it to the camera's position
     ctx.save();
     ctx.translate(-cameraXRef.current, 0);
 
-    const leftBound = cameraXRef.current - 50;
-    const rightBound = cameraXRef.current + screenWidth + 50;
+    entities.forEach(entity => {
+      if (entity instanceof Item) {
+        entity.draw(ctx);
+      }
+    });
 
-    for (const entity of entities) {
-      if (entity instanceof Fireball) continue;
-
-      entity.draw(ctx);
-    }
-
-    // Draw each block with the camera context
-    for (const block of blocks) {
-      // Only draw if block is in the visible area
+    // 2. Draw blocks within visible bounds
+    blocks.forEach(block => {
       if (block.x + block.width >= leftBound && block.x <= rightBound) {
         block.draw(ctx);
-        if (block.fragments && block.fragments.length > 0) {
+        if (block.fragments?.length > 0) {
           block.drawAllFragments(ctx);
         }
       }
-    }
+    });
 
-    // Draw fireball on top of the tiles
-    for (const entity of entities) {
+    // 3. Draw fireballs on top of blocks
+    entities.forEach(entity => {
       if (entity instanceof Fireball) {
         entity.draw(ctx);
       }
-    }
+    });
 
-    for (const player of players) {
+    // 4. Draw Goombas
+    entities.forEach(entity => {
+      if (entity instanceof Goomba || entity instanceof Koopa) {
+        entity.draw(ctx, entity.flipY);
+      }
+    });
+
+    // 5. Draw players (only if visible and not invincible)
+    players.forEach(player => {
+      if (player.isInvincible && !player.visibilityToggle) return;
       player.draw(ctx);
-    }
+    });
 
+    // Restore context to its original state
     ctx.restore();
   };
 
