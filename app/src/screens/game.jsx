@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import DrawLevel from '../utils/drawLevel.jsx';
-import stage from '../assets/levels/test.json';
+import stage from '../assets/levels/level_1-2.json';
 import useCamera from "../utils/camera.jsx";
 import Block from '../Blocks/block.jsx';
 import { imageById } from '../Blocks/spriteMap.jsx';
@@ -14,8 +14,10 @@ import createGameLoop from "../utils/gameLoop.jsx";
 import Fireball from "../entities/fireball.jsx";
 import Goomba from "../entities/goomba.jsx";
 import Koopa from "../entities/koopa.jsx";
+import Shell from "../entities/shell.jsx";
 
-export let blocks = []; // Global blocks
+export let blocks = [];
+export let mapType = [];
 
 const preloadedImagesPromise = (function () {
   const loadedImages = {};
@@ -55,6 +57,10 @@ const Game = () => {
     setEntities((prevItems) => [...prevItems, item]);
   };
 
+  useEffect(() => {
+    console.log(entities);
+  }, [entities]);
+
   const collisionRef = useRef(new Collision(addItemCallback));
 
   useEffect(() => {
@@ -63,6 +69,7 @@ const Game = () => {
     preloadedImagesPromise.then((sprites) => {
       setLoadedSprites(sprites);
       setLevelBackground(stage.backgroundColor);
+      mapType = stage.mapType;
     });
 
     return () => {
@@ -144,6 +151,7 @@ const Game = () => {
             colIndex * TILE_SIZE,
             rowIndex * TILE_SIZE,
             collisionRef.current,
+            addItemCallback
           );
 
           addItemCallback(koopa);
@@ -174,8 +182,8 @@ const Game = () => {
               // Check if it's a Fireball and needs full update
               if (entity instanceof Fireball) {
                 entity.update(delta);
-              } else if (entity instanceof Goomba || entity instanceof Koopa) {
-                entity.update(delta, entities.filter((entity) => entity instanceof Fireball));
+              } else if (entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell) {
+                entity.update(delta, entities);
                 entity.animate(delta);
               } else if (entity.animate) {
                 entity.animate(delta);

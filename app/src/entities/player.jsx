@@ -47,6 +47,7 @@ import {Flower, Mushroom} from "../Blocks/item.jsx";
 import {TILE_SIZE} from "../constants/constants.jsx";
 import Goomba from "./goomba.jsx";
 import Koopa from "./koopa.jsx";
+import Shell from "./shell.jsx";
 
 export const MarioSmallIdleFrames  = [MarioSmallIdle];
 export const MarioSmallRunFrames   = [MarioSmallRun1, MarioSmallRun2, MarioSmallRun3];
@@ -219,10 +220,10 @@ export default class Player extends Entity {
               this.vy = -260;
               this.fallAcceleration = STOP_FALL;
             } else if (Math.abs(this.vx) < 100) {
-              this.vy = -280;
+              this.vy = -270;
               this.fallAcceleration = WALK_FALL;
             } else {
-              this.vy = -300;
+              this.vy = -290;
               this.fallAcceleration = RUN_FALL;
             }
 
@@ -382,20 +383,58 @@ export default class Player extends Entity {
   entityCollision(entities) {
     // Check for player colliding with enemies
     for (const entity of entities) {
+      // Basic collision detection
       if (
         this.x < entity.x + entity.width &&
         this.x + this.width > entity.x &&
         this.y < entity.y + entity.height &&
         this.y + this.height > entity.y
       ) {
-        if ((entity instanceof Goomba || entity instanceof Koopa) && !entity.isDead) {
-          const wasAboveEntity = this.prevY + this.height <= entity.y;
-          const isMovingDownward = this.vy > 0;
-          const isTouchingTop = this.y + this.height >= entity.y && this.y + this.height <= entity.y + 10;
+        // Improved collision detection for top hits
+        // Check if player's feet are near the enemy's head
+        const playerBottom = this.y + this.height;
+        const entityTop = entity.y;
 
-          if (wasAboveEntity && isMovingDownward && isTouchingTop) {
-            entity.dead();
+        // More precise detection for "was above" check
+        // Using previous position to determine if player was above entity
+        const wasAboveEntity = this.prevY + this.height <= entity.y + 5; // Small tolerance
+
+        // Ensure player is moving downward
+        const isMovingDownward = this.vy > 0;
+
+        // More lenient top collision check with improved tolerance
+        const isTouchingTop = playerBottom >= entityTop && playerBottom <= entityTop + 15;
+
+        // Combined check for successful top hit
+        const isSuccessfulTopHit = wasAboveEntity && isMovingDownward && isTouchingTop;
+
+        if (entity instanceof Shell) {
+          // The Shell is not moving, so mario can kick it to move it
+          if (entity.vx === 0) {
+            entity.shoot(this.facing);
             this.vy = -175;
+          } else if (Math.abs(entity.vx) > 0) { // The shell is moving
+            if (isSuccessfulTopHit) {
+              this.vy = -175;
+              break;
+            } else {
+              if (this.isBigMario) {
+                this.shrink();
+              } else {
+                if (!this.isInvincible) {
+                  this.dead();
+                }
+              }
+            }
+          }
+        }
+
+        if ((entity instanceof Goomba || entity instanceof Koopa) && !entity.isDead) {
+          if (isSuccessfulTopHit) {
+            entity.dead(this);
+            this.vy = -200;
+
+            if (entity instanceof Koopa) this.vx *= 1.1;
             break;
           } else if (!entity.isDead) {
             if (this.isBigMario) {

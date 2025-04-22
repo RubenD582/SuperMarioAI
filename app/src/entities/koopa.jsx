@@ -2,15 +2,16 @@ import Entity from './Entity';
 
 import Koopa1 from '../assets/Sprites/Koopa_Walk1.png';
 import Koopa2 from '../assets/Sprites/Koopa_Walk2.png';
-import KoopaShell from '../assets/Sprites/Koopa_Shell.png';
+import Shell from "./shell.jsx";
+import Fireball from "./fireball.jsx";
 
 export const KoopaFrames  = [Koopa1, Koopa2];
-export const KoopaShellFrames = [KoopaShell];
 
 export default class Koopa extends Entity {
-  constructor(x, y, collision) {
+  constructor(x, y, collision, addItemCallback) {
     super(x, y, 32, 32);
 
+    this.addItemCallback = addItemCallback;
     this.collision = collision;
     this.vx = -40;
     this.vy = 0;
@@ -27,7 +28,6 @@ export default class Koopa extends Entity {
     this.preloadAnimations();
 
     this.remove = false;
-    this.deathTimer = 0;
 
     this.killedByFireball = false;
     this.flipY = false;
@@ -35,7 +35,6 @@ export default class Koopa extends Entity {
 
   preloadAnimations() {
     this.animations.walk  = this.preloadImages(KoopaFrames);
-    this.animations.shell  = this.preloadImages(KoopaShellFrames);
   }
 
   preloadImages(srcArray) {
@@ -57,7 +56,7 @@ export default class Koopa extends Entity {
     super.animate(deltaTime, 0.1);
   }
 
-  update(delta, fireballs) {
+  update(delta, entities) {
     if (!this.isDead) {
       this.vy += this.gravity * delta;
       this.y += this.vy * delta;
@@ -66,10 +65,13 @@ export default class Koopa extends Entity {
       this.collision.checkHorizontalCollisions(this);
       this.collision.checkVerticalCollisions(this);
 
-      fireballs.forEach(fireball => {
-        if (!fireball.explode && this.checkCollision(fireball)) {
-          fireball.explode = true;
-          this.dead('fireball');
+      entities.forEach(entity => {
+        if (!entity.explode && this.checkCollision(entity)) {
+
+          if (entity instanceof Fireball) {
+            entity.explode = true;
+            this.dead(entity);
+          }
         }
       });
 
@@ -81,7 +83,6 @@ export default class Koopa extends Entity {
         this.vy += this.gravity * delta;
 
         if (this.y > 1000) this.remove = true;
-
       }
     }
   }
@@ -95,18 +96,22 @@ export default class Koopa extends Entity {
     );
   }
 
-  dead(reason = 'jump') {
-    if (reason === 'fireball') {
+  dead(object) {
+    if (object instanceof Fireball) {
       this.isDead = true;
       this.killedByFireball = true;
       this.flipY = true;
       this.vx = 0;
       this.vy = -300;
-      this.deathTimer = 0;
     } else {
-      this.currentAnimation = 'shell';
+      this.addItemCallback(new Shell(
+        this.x,
+        this.y,
+        this.collision,
+      ));
+
+      this.remove = true;
       this.isDead = true;
-      this.deathTimer = 0;
       this.vx = 0;
     }
   }

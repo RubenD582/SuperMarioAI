@@ -6,6 +6,7 @@ import Player from '../entities/player.jsx';
 import MarioFireRun1 from "../assets/Sprites/0/Mario_Fire_Run1.png";
 import Goomba from "../entities/goomba.jsx";
 import Koopa from "../entities/koopa.jsx";
+import Shell from "../entities/shell.jsx";
 
 export default class Collision {
   constructor(addItemCallback) {
@@ -16,7 +17,7 @@ export default class Collision {
     let hitObject = false;
 
     const entityBottom = e.y + e.height;
-    const entityTop = e.y;
+    const entityTop = e.y + TILE_SIZE * 0.3;
     const entityLeft = e.x;
     const entityRight = e.x + e.width;
 
@@ -51,7 +52,7 @@ export default class Collision {
       if (verticalOverlap > 0 && verticalOverlap > 2) {
         // Right collision
         if (e.vx > 0 && entityRight > blockLeft && entityLeft < blockLeft) {
-          if (e instanceof Mushroom || e instanceof Goomba || e instanceof Koopa) {
+          if (e instanceof Mushroom || e instanceof Goomba || e instanceof Koopa || e instanceof Shell) {
             e.vx *= -1; // Reverse direction
           } else {
             e.x = blockLeft - e.width;
@@ -62,7 +63,7 @@ export default class Collision {
         }
         // Left collision
         else if (e.vx < 0 && entityLeft < blockRight && entityRight > blockRight) {
-          if (e instanceof Mushroom || e instanceof Goomba || e instanceof Koopa) {
+          if (e instanceof Mushroom || e instanceof Goomba || e instanceof Koopa || e instanceof Shell) {
             e.vx *= -1; // Reverse direction
           } else {
             e.x = blockRight;

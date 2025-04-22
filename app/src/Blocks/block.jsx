@@ -1,5 +1,8 @@
+import fragmentUnderground from '../assets/Sprites/fragment_underground.png';
 import fragment from '../assets/Sprites/fragment.png';
+
 import {TILE_SIZE} from "../constants/constants.jsx";
+import {mapType} from "../screens/game.jsx";
 
 export default class Block {
   constructor(x, y, width, height, type, image, solid = false) {
@@ -123,7 +126,7 @@ export class Fragment {
     this.rotation = Math.random() * Math.PI * 2;
     this.rotationSpeed = (Math.random() - 0.5) * 0.1;
     this.image = new Image();
-    this.image.src = fragment;
+    this.image.src = mapType === 'underground' ? fragmentUnderground : fragment;
   }
 
   update() {

@@ -4,6 +4,7 @@ import Fireball from "../entities/fireball.jsx";
 import Goomba from "../entities/goomba.jsx";
 import Item from "../Blocks/item.jsx";
 import Koopa from "../entities/koopa.jsx";
+import Shell from "../entities/shell.jsx";
 
 const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundColor = '#000000', cameraX = 0, style = {} }, ref) => {
   const canvasRef = useRef(null);
@@ -109,7 +110,7 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
 
     // 4. Draw Goombas
     entities.forEach(entity => {
-      if (entity instanceof Goomba || entity instanceof Koopa) {
+      if (entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell) {
         entity.draw(ctx, entity.flipY);
       }
     });

@@ -18,7 +18,7 @@ export default class Item {
     this.itemAnimations = this.loadItemAnimations();
     this.itemFrameIndex = 0;
     this.itemFrameTime = 0;
-    this.itemFrameDuration = 0.2; // each frame lasts 0.2s
+    this.itemFrameDuration = 0.2;
   }
 
   loadItemAnimations() {
@@ -96,7 +96,7 @@ export class Mushroom extends Item {
     super(x, y + TILE_SIZE - TILE_SIZE * 0.16, 'mushroom');
 
     this.dy = -25;
-    this.vx = 75;
+    this.vx = 60;
     this.vy = 0;
     this.gravity = 1000;
     this.grounded = false;
