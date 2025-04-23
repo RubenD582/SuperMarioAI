@@ -17,6 +17,8 @@ export default class Entity {
     this.currentFrame = 0;
     this.frameTime = 0;
     this.frameDuration = 0.2;
+
+    this.start = false;
   }
 
   // Call this when animation changes

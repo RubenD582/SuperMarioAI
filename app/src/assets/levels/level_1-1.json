@@ -935,10 +935,10 @@
       null,
       null,
       null,
+      "goomba",
       null,
       null,
-      null,
-      null,
+      "goomba",
       null,
       null,
       null,
@@ -1090,7 +1090,12 @@
       null,
       null,
       null,
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
       null,
       null,
       null,
@@ -1177,7 +1182,12 @@
       null,
       null,
       null,
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "auto"
+        }
+      },
       null,
       null,
       null,
@@ -1197,8 +1207,18 @@
       null,
       null,
       "brick",
-      "mystery",
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
       "brick",
       null,
       null,
@@ -1936,14 +1956,29 @@
       null,
       null,
       null,
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
       null,
       null,
       null,
       "brick",
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "auto"
+        }
+      },
       "brick",
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
       "brick",
       null,
       null,
@@ -1998,7 +2033,12 @@
       null,
       null,
       "brick",
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "auto"
+        }
+      },
       "brick",
       null,
       null,
@@ -2021,18 +2061,38 @@
       null,
       null,
       "brick",
-      "brick",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "star"
+        }
+      },
       null,
       null,
       null,
       null,
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
       null,
       null,
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
       null,
       null,
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
       null,
       null,
       null,
@@ -2090,7 +2150,12 @@
       null,
       "brick",
       "brick",
-      "mystery",
+      {
+        "id": "mystery",
+        "content": {
+          "type": "coin"
+        }
+      },
       "brick",
       null,
       null,
@@ -2581,7 +2646,7 @@
       null,
       null,
       null,
-      null,
+      "goomba",
       "bush1",
       null,
       null,
@@ -2598,6 +2663,54 @@
       null,
       null,
       "pipeBottom",
+      null,
+      null,
+      "goomba",
+      null,
+      null,
+      null,
+      null,
+      "pipeBottom",
+      null,
+      null,
+      null,
+      null,
+      null,
+      "goomba",
+      "goomba",
+      null,
+      null,
+      null,
+      "pipeBottom",
+      null,
+      "bush3",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "bush1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
       null,
       null,
       "bush2",
@@ -2605,7 +2718,10 @@
       null,
       null,
       null,
-      "pipeBottom",
+      null,
+      "goomba",
+      null,
+      "goomba",
       null,
       null,
       null,
@@ -2614,10 +2730,7 @@
       null,
       null,
       null,
-      null,
-      null,
-      "pipeBottom",
-      null,
+      "koopa",
       "bush3",
       null,
       null,
@@ -2634,59 +2747,11 @@
       null,
       null,
       null,
+      "goomba",
+      "goomba",
       null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "bush2",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "bush3",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "bush1",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
+      "goomba",
+      "goomba",
       null,
       null,
       null,
@@ -2731,9 +2796,9 @@
       null,
       null,
       null,
+      "goomba",
       null,
-      null,
-      null,
+      "goomba",
       null,
       null,
       null,

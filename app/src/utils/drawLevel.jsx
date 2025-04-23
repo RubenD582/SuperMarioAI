@@ -110,6 +110,10 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
 
     // 4. Draw Goombas
     entities.forEach(entity => {
+      if (entity.x + entity.width >= leftBound && entity.x <= rightBound) {
+        entity.start = true;
+      }
+
       if (entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell) {
         entity.draw(ctx, entity.flipY);
       }

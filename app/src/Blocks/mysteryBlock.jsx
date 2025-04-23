@@ -1,4 +1,4 @@
-import {Flower, Mushroom} from './item.jsx';
+import {Coin, Flower, Mushroom, Starman} from './item.jsx';
 import Block from './block.jsx';
 import { TILE_SIZE } from '../constants/constants.jsx';
 
@@ -23,11 +23,11 @@ export let BlockFrames;
 export let EmptyBlockFrame;
 
 export default class MysteryBlock extends Block {
-  constructor(x, y, width, height, image, collision, solid = true, itemType = 'mushroom') {
+  constructor(x, y, width, height, image, collision, solid = true, content = 'mushroom') {
     super(x, y, width, height, "mystery", image, solid);
 
     this.collision = collision;
-    this.itemType = itemType;
+    this.content = content;
     this.empty = false;
     this.complete = false;
     this.points = 200;
@@ -41,7 +41,7 @@ export default class MysteryBlock extends Block {
 
     this.spawnedItem = null;
 
-    if (mapType) {
+    if (mapType === 'underground') {
       BlockFrames = [MysteryBlockUnderground1, MysteryBlockUnderground2, MysteryBlockUnderground3];
       EmptyBlockFrame = [EmptyBlockUnderground];
     } else {
@@ -110,33 +110,37 @@ export default class MysteryBlock extends Block {
   }
 
   onBlockHit(addItemCallback, isBig) {
-    if (isBig) {
-      this.itemType = 'flower';
-    } else {
-      this.itemType = 'mushroom';
-    }
-
     if (!this.empty) {
       this.empty = true;
-      this.spawnItem(addItemCallback);
+      this.spawnItem(addItemCallback, isBig);
       return this.points;
     }
+
     return 0;
   }
 
-  spawnItem(addItemCallback) {
+  spawnItem(addItemCallback, isBig) {
     let item;
-    if (this.itemType === 'flower') {
-      item = new Flower(this.x + (this.width - TILE_SIZE) / 2, this.y - TILE_SIZE);
-    } else if (this.itemType === 'mushroom') {
-      item = new Mushroom(this.x + (this.width - TILE_SIZE) / 2, this.y - TILE_SIZE, this.collision);
+    console.log(this.content.type);
+    if (this.content.type === 'auto') {
+      if (isBig) {
+        item = new Flower(this.x + (this.width - TILE_SIZE) / 2, this.y - TILE_SIZE)
+      } else {
+        item = new Mushroom(this.x + (this.width - TILE_SIZE) / 2, this.y - TILE_SIZE, this.collision)
+      }
     }
 
-    this.spawnedItem = item;
+    if (this.content.type === 'coin') {
+      item = new Coin(this.x + (this.width - TILE_SIZE) / 2, this.y - TILE_SIZE)
+    } else if (this.content.type === 'star') {
+      item = new Starman(this.x + (this.width - TILE_SIZE) / 2, this.y - TILE_SIZE, this.collision)
+    }
 
+    console.log(item);
+
+    this.spawnedItem = item;
     if (addItemCallback && item) {
       addItemCallback(item);
     }
   }
-
 }

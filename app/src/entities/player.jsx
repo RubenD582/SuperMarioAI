@@ -43,7 +43,7 @@ import MarioFireSlide from '../assets/Sprites/0/Mario_Fire_Slide.png';
 import MarioFireCrouch from '../assets/Sprites/0/Mario_Fire_Crouch.png';
 import MarioFireThrow from '../assets/Sprites/0/Mario_Fire_Throw.png';
 
-import {Flower, Mushroom} from "../Blocks/item.jsx";
+import {Flower, Mushroom, Starman} from "../Blocks/item.jsx";
 import {TILE_SIZE} from "../constants/constants.jsx";
 import Goomba from "./goomba.jsx";
 import Koopa from "./koopa.jsx";
@@ -98,8 +98,8 @@ export default class Player extends Entity {
     this.visibilityToggle = true;
     this.flashInterval = 50;
     this.lastFlashTime = 0;
+    this.starmanMode = false;
 
-    this.prevX = this.X;
     this.prevY = this.y;
   }
 
@@ -194,7 +194,6 @@ export default class Player extends Entity {
           this.growing = false;
           this.height = TILE_SIZE * 2;
 
-          // Ensure final position is correct
           this.y = bottomY - this.height;
 
           this.animations.idle = this.preloadImages(MarioBigIdleFrames);
@@ -390,30 +389,27 @@ export default class Player extends Entity {
         this.y < entity.y + entity.height &&
         this.y + this.height > entity.y
       ) {
-        // Improved collision detection for top hits
-        // Check if player's feet are near the enemy's head
         const playerBottom = this.y + this.height;
         const entityTop = entity.y;
 
-        // More precise detection for "was above" check
-        // Using previous position to determine if player was above entity
-        const wasAboveEntity = this.prevY + this.height <= entity.y + 5; // Small tolerance
+        const wasAboveEntity = this.prevY + this.height <= entity.y + 5;
 
-        // Ensure player is moving downward
         const isMovingDownward = this.vy > 0;
 
-        // More lenient top collision check with improved tolerance
         const isTouchingTop = playerBottom >= entityTop && playerBottom <= entityTop + 15;
 
-        // Combined check for successful top hit
         const isSuccessfulTopHit = wasAboveEntity && isMovingDownward && isTouchingTop;
 
+        if (entity instanceof Starman) {
+          this.starmanMode = false;
+          entity.isCollected = true;
+        }
+
         if (entity instanceof Shell) {
-          // The Shell is not moving, so mario can kick it to move it
           if (entity.vx === 0) {
             entity.shoot(this.facing);
             this.vy = -175;
-          } else if (Math.abs(entity.vx) > 0) { // The shell is moving
+          } else if (Math.abs(entity.vx) > 0) {
             if (isSuccessfulTopHit) {
               this.vy = -175;
               break;

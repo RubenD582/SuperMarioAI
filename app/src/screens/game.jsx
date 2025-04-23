@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import DrawLevel from '../utils/drawLevel.jsx';
-import stage from '../assets/levels/level_1-2.json';
+import stage from '../assets/levels/level_1-1.json';
 import useCamera from "../utils/camera.jsx";
 import Block from '../Blocks/block.jsx';
 import { imageById } from '../Blocks/spriteMap.jsx';
@@ -69,7 +69,7 @@ const Game = () => {
     preloadedImagesPromise.then((sprites) => {
       setLoadedSprites(sprites);
       setLevelBackground(stage.backgroundColor);
-      mapType = stage.mapType;
+      mapType = stage.mapType || 'overworld';
     });
 
     return () => {
@@ -125,10 +125,18 @@ const Game = () => {
       row.map((tileId, colIndex) => {
         if (tileId == null) return null;
 
-        const sprite = loadedSprites[tileId];
-        if (!sprite?.image) return null;
+        console.log(tileId);
 
-        if (tileId === "mystery") {
+        let sprite;
+        if (tileId.id) {
+          sprite = loadedSprites[tileId.id];
+        } else {
+          sprite = loadedSprites[tileId];
+        }
+
+        if (sprite === undefined || sprite === null) return null;
+
+        if (tileId.id && tileId.id === "mystery") {
           return new MysteryBlock(
             colIndex * TILE_SIZE,
             rowIndex * TILE_SIZE,
@@ -136,7 +144,8 @@ const Game = () => {
             sprite.h || TILE_SIZE,
             sprite.image,
             collisionRef.current,
-            sprite.solid || false
+            sprite.solid || false,
+            tileId.content
           );
         } else if (tileId === "goomba") {
           const goomba = new Goomba(

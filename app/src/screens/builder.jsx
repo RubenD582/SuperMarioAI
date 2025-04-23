@@ -15,6 +15,11 @@ const mysteryOptions = [
   { label: 'Custom Tile...', value: 'custom' },
 ];
 
+const brickOptions = [
+  { label: 'Coin', value: 'coin' },
+  { label: 'Star', value: 'star' },
+];
+
 const TILE_SIZE = 32;
 const GRID_WIDTH = 192;
 const GRID_HEIGHT = 16;
@@ -339,6 +344,48 @@ const LevelBuilder = ({ onBack }) => {
       return newGrid;
     });
   };
+
+  const updateBrickContent = (contentType, quantity = null) => {
+    if (!selectedBlockPosition) return;
+
+    const { row, col } = selectedBlockPosition;
+
+    setLevelData(prevData => {
+      const newGrid = [...prevData];
+      const currentRow = [...newGrid[row]];
+      const currentTile = currentRow[col];
+
+      let updatedTile;
+
+      if (typeof currentTile === 'object' && currentTile.id === 'brick') {
+        // Existing brick tile
+        updatedTile = {
+          ...currentTile,
+          content: contentType === 'none' ? null : {
+            type: contentType,
+            ...(contentType === 'coin' ? { quantity: quantity ?? currentTile.content?.quantity ?? 1 } : {})
+          },
+        };
+      } else if (currentTile === 'brick') {
+        // New brick tile placement
+        updatedTile = {
+          id: 'brick',
+          content: contentType === 'none' ? null : {
+            type: contentType,
+            ...(contentType === 'coin' && quantity ? { quantity } : {})
+          },
+        };
+      }
+
+      if (updatedTile) {
+        currentRow[col] = updatedTile;
+        newGrid[row] = currentRow;
+      }
+
+      return newGrid;
+    });
+  };
+
 
   const importLevel = useCallback((event) => {
     const file = event.target.files[0];
@@ -699,43 +746,86 @@ const LevelBuilder = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Mystery Block Editor Panel */}
+          {/* Block Editor Panel */}
           {selectedBlock && (
-            typeof selectedBlock === 'object' && selectedBlock.id === 'mystery' || selectedBlock === 'mystery'
-          ) && (
             <div className="p-2 bg-neutral-800 text-sm rounded shadow">
-              <h3 className="font-bold mb-2">Mystery Block Settings</h3>
-              <select
-                className="w-full text-black mb-2 p-1 rounded"
-                value={
-                  typeof selectedBlock === 'object' && selectedBlock.content
-                    ? selectedBlock.content.type
-                    : 'auto'
-                }
-                onChange={(e) => updateMysteryContent(e.target.value)}
-              >
-                {mysteryOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              {/* Mystery Block Settings */}
+              {(typeof selectedBlock === 'object' && selectedBlock.id === 'mystery' || selectedBlock === 'mystery') && (
+                <>
+                  <h3 className="font-bold mb-2">Mystery Block Settings</h3>
+                  <select
+                    className="w-full text-black mb-2 p-1 rounded"
+                    value={
+                      typeof selectedBlock === 'object' && selectedBlock.content
+                        ? selectedBlock.content.type
+                        : 'auto'
+                    }
+                    onChange={(e) => updateMysteryContent(e.target.value)}
+                  >
+                    {mysteryOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
 
-              {(typeof selectedBlock === 'object' &&
-                selectedBlock.content &&
-                selectedBlock.content.type === 'custom') && (
-                <select
-                  className="w-full text-black p-1 rounded"
-                  value={selectedBlock.content.customItemId || ''}
-                  onChange={(e) => updateMysteryContent('custom', e.target.value)}
-                >
-                  <option value="">-- Choose Tile --</option>
-                  {imageList.map(tile => (
-                    <option key={tile.id} value={tile.id}>
-                      {tile.id}
-                    </option>
-                  ))}
-                </select>
+                  {(typeof selectedBlock === 'object' &&
+                    selectedBlock.content &&
+                    selectedBlock.content.type === 'custom') && (
+                    <select
+                      className="w-full text-black p-1 rounded"
+                      value={selectedBlock.content.customItemId || ''}
+                      onChange={(e) => updateMysteryContent('custom', e.target.value)}
+                    >
+                      <option value="">-- Choose Tile --</option>
+                      {imageList.map(tile => (
+                        <option key={tile.id} value={tile.id}>
+                          {tile.id}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </>
+              )}
+
+              {/* Brick Block Settings */}
+              {(typeof selectedBlock === 'object' && selectedBlock.id === 'brick' || selectedBlock === 'brick') && (
+                <>
+                  <h3 className="font-bold mb-2">Brick Block Settings</h3>
+                  <select
+                    className="w-full text-black mb-2 p-1 rounded"
+                    value={
+                      typeof selectedBlock === 'object' && selectedBlock.content
+                        ? selectedBlock.content.type
+                        : 'none'
+                    }
+                    onChange={(e) => updateBrickContent(e.target.value)}
+                  >
+                    <option value="none">Empty</option>
+                    {brickOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Optional: Quantity selector for coins */}
+                  {(typeof selectedBlock === 'object' &&
+                    selectedBlock.content &&
+                    selectedBlock.content.type === 'coin') && (
+                    <div className="mt-2">
+                      <label className="block text-sm mb-1">Coin Count:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        className="w-full text-black p-1 rounded"
+                        value={selectedBlock.content.quantity || 1}
+                        onChange={(e) => updateBrickContent('coin', parseInt(e.target.value, 10))}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

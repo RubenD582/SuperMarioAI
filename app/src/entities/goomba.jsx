@@ -62,37 +62,39 @@ export default class Goomba extends Entity {
   }
 
   update(delta, entities) {
-    if (!this.isDead) {
-      this.vy += this.gravity * delta;
-      this.y += this.vy * delta;
-      this.x += this.vx * delta;
-
-      this.collision.checkHorizontalCollisions(this);
-      this.collision.checkVerticalCollisions(this);
-
-      entities.forEach(entity => {
-        if (this.checkCollision(entity)) {
-          if (entity instanceof Fireball) {
-            entity.explode = true;
-            this.dead(entity);
-          } else if (entity instanceof Shell) {
-            this.dead(entity);
-          }
-        }
-      });
-
-    } else {
-      if (this.killedByFireball) {
-        // Let it fall freely without collisions
-        this.y += this.vy * delta;
+    if (this.start) {
+      if (!this.isDead) {
         this.vy += this.gravity * delta;
+        this.y += this.vy * delta;
+        this.x += this.vx * delta;
 
-        if (this.y > 1000) this.remove = true;
+        this.collision.checkHorizontalCollisions(this);
+        this.collision.checkVerticalCollisions(this);
+
+        entities.forEach(entity => {
+          if (this.checkCollision(entity)) {
+            if (entity instanceof Fireball) {
+              entity.explode = true;
+              this.dead(entity);
+            } else if (entity instanceof Shell) {
+              this.dead(entity);
+            }
+          }
+        });
 
       } else {
-        this.deathTimer += delta * 1000;
-        if (this.deathTimer >= 250) {
-          this.remove = true;
+        if (this.killedByFireball) {
+          // Let it fall freely without collisions
+          this.y += this.vy * delta;
+          this.vy += this.gravity * delta;
+
+          if (this.y > 1000) this.remove = true;
+
+        } else {
+          this.deathTimer += delta * 1000;
+          if (this.deathTimer >= 250) {
+            this.remove = true;
+          }
         }
       }
     }
