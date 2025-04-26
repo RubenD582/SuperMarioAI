@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import DrawLevel from '../utils/drawLevel.jsx';
-import stage from '../assets/levels/level_1-1.json';
+import { LevelProvider, useLevel, initializeLevelManager } from '../utils/levelManager.jsx';
 import useCamera from "../utils/camera.jsx";
 import Block from '../Blocks/block.jsx';
 import { imageById } from '../Blocks/spriteMap.jsx';
@@ -18,12 +18,12 @@ import Shell from "../entities/shell.jsx";
 import PipeTop from "../Blocks/pipeTop.jsx";
 import PiranhaPlant from "../entities/piranhaPlant.jsx";
 import Platform from "../Blocks/platform.jsx";
+import PipeConnection from "../Blocks/pipeConnection.jsx";
 
 export let blocks = [];
-export let mapType = [];
+export let mapType = 'overworld';
 export let mapHeight = null;
 export let mapWidth = null;
-
 export let playerX = null;
 
 const preloadedImagesPromise = (function () {
@@ -46,15 +46,28 @@ const preloadedImagesPromise = (function () {
   ).then(() => loadedImages);
 })();
 
-const Game = () => {
-  const [level, setLevel] = useState(0);
+// Wrapper component that provides the LevelProvider context
+const GameWrapper = () => {
+  return (
+    <LevelProvider>
+      <GameContent />
+    </LevelProvider>
+  );
+};
+
+const GameContent = () => {
+  // Use the level context instead of local level state
+  const { currentLevel, levelData, changeLevel } = useLevel();
   const [levelBackground, setLevelBackground] = useState('#000000');
   const [loadedSprites, setLoadedSprites] = useState(null);
 
   const [population, setPopulation] = useState(1);
   const [players, setPlayers] = useState([]);
-
   const [entities, setEntities] = useState([]);
+
+  useEffect(() => {
+    console.log(entities);
+  }, [entities]);
 
   const camera = useCamera();
   const gameRef = useRef(null);
@@ -66,13 +79,22 @@ const Game = () => {
 
   const collisionRef = useRef(new Collision(addItemCallback));
 
+  // Initialize the level manager so it can be used globally
   useEffect(() => {
+    initializeLevelManager(changeLevel);
+  }, [changeLevel]);
+
+  useEffect(() => {
+    generatePlayers();
     setupKeyboardInput();
 
     preloadedImagesPromise.then((sprites) => {
       setLoadedSprites(sprites);
-      setLevelBackground(stage.backgroundColor);
-      mapType = stage.mapType || 'overworld';
+
+      // Load initial level if no level is loaded yet
+      if (!levelData) {
+        changeLevel("1-1");
+      }
     });
 
     return () => {
@@ -80,16 +102,24 @@ const Game = () => {
     };
   }, []);
 
+  // Update game state when level data changes
   useEffect(() => {
-    if (loadedSprites) {
-      blocks = generateBlocksFromMap(stage.map, loadedSprites);
+    if (levelData && loadedSprites) {
+      // Reset entities and blocks when changing levels
+      setEntities([]);
+      blocks = [];
 
-      mapWidth = stage.map[0].length * TILE_SIZE;
-      mapHeight = stage.map.length * TILE_SIZE;
+      // Update game properties based on level data
+      setLevelBackground(levelData.backgroundColor);
+      mapType = levelData.mapType || 'overworld';
+
+      // Generate blocks from the new level map
+      blocks = generateBlocksFromMap(levelData.map, loadedSprites);
+
+      mapWidth = levelData.map[0].length * TILE_SIZE;
+      mapHeight = levelData.map.length * TILE_SIZE;
     }
-
-    generatePlayers();
-  }, [level, loadedSprites, population]);
+  }, [currentLevel, levelData, loadedSprites]);
 
   useEffect(() => {
     const handleKeyUpdate = (keys) => {
@@ -112,11 +142,17 @@ const Game = () => {
 
   const generatePlayers = () => {
     let currPlayers = [];
+
+    // Get player starting position from level data if available
+    const startX = TILE_SIZE * 2;
+    const startY = (mapType === "underground" ? TILE_SIZE * 2 : TILE_SIZE * 10);
+
     for (let i = 0; i < population; i++) {
+      console.log(`NEW PLAYER`);
       currPlayers.push(
         new Player(
-          TILE_SIZE * 2,
-          TILE_SIZE * 10,
+          startX,
+          startY,
           collisionRef.current,
           addItemCallback
         )
@@ -137,12 +173,14 @@ const Game = () => {
         if (tileId.id) {
           sprite = loadedSprites[tileId.id];
           blockContent = tileId.content;
-          blockContentQuantity = tileId.content.quantity;
+          blockContentQuantity = tileId.content?.quantity || 1;
         } else {
           sprite = loadedSprites[tileId];
         }
 
         if (sprite === undefined || sprite === null) return null;
+
+        const layer = sprite.layer || 0;
 
         if (tileId.id === "mystery") {
           return new MysteryBlock(
@@ -154,6 +192,19 @@ const Game = () => {
             collisionRef.current,
             sprite.solid || false,
             blockContent,
+            layer
+          );
+        } else if (tileId.id === "pipeConnection") {
+          return new PipeConnection(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            sprite.w || TILE_SIZE,
+            sprite.h || TILE_SIZE,
+            sprite.image,
+            collisionRef.current,
+            sprite.solid || false,
+            blockContent,
+            layer
           );
         } else if (tileId.id === "platform") {
           return new Platform(
@@ -165,15 +216,19 @@ const Game = () => {
             collisionRef.current,
             sprite.solid || false,
             blockContent,
+            layer
           );
         } else if (tileId.id === "pipeTop") {
-          const piranhaPlant = new PiranhaPlant(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            collisionRef.current,
-          );
+          if (blockContent && blockContent.type === "plant") {
+            const piranhaPlant = new PiranhaPlant(
+              colIndex * TILE_SIZE,
+              rowIndex * TILE_SIZE,
+              collisionRef.current,
+              layer
+            );
 
-          addItemCallback(piranhaPlant);
+            addItemCallback(piranhaPlant);
+          }
 
           return new PipeTop(
             colIndex * TILE_SIZE,
@@ -190,6 +245,7 @@ const Game = () => {
             colIndex * TILE_SIZE,
             rowIndex * TILE_SIZE,
             collisionRef.current,
+            layer
           );
 
           addItemCallback(goomba);
@@ -200,9 +256,25 @@ const Game = () => {
             collisionRef.current,
             addItemCallback,
             tileId === "koopaRed",
+            layer
           );
 
           addItemCallback(koopa);
+        } else if (tileId.id === "pipe") {
+          // Handle pipe with level transition
+          return new Block(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            sprite.w || TILE_SIZE,
+            sprite.h || TILE_SIZE,
+            tileId,
+            sprite.image,
+            sprite.solid || false,
+            blockContent,
+            blockContentQuantity,
+            collisionRef.current,
+            layer
+          );
         } else {
           return new Block(
             colIndex * TILE_SIZE,
@@ -215,6 +287,7 @@ const Game = () => {
             blockContent,
             blockContentQuantity,
             collisionRef.current,
+            layer
           );
         }
       }).filter(Boolean) // Remove nulls
@@ -227,7 +300,7 @@ const Game = () => {
       onUpdate: ({ delta, gameDelta, gameTime }) => {
         const fps = Math.round(1 / delta);
         if (blocks.length > 0) {
-          if (entities) {
+          if (entities && entities.length > 0) {
             for (let i = entities.length - 1; i >= 0; i--) {
               const entity = entities[i];
               // Check if it's a Fireball and needs full update
@@ -247,30 +320,25 @@ const Game = () => {
             }
           }
 
-          // Remove broken blocks
-          for (let i = entities.length - 1; i >= 0; i--) {
-            if (entities[i].isCollected) {
-              entities.splice(i, 1);
+          if (blocks && blocks.length > 0) {
+            blocks.forEach((block) => {
+              if (block.animate) block.animate(delta);
+              block.update?.(delta);
+
+              if (block.fragments && block.fragments.length > 0) {
+                block.updateAllFragments();
+              }
+            });
+
+            // Remove broken blocks
+            for (let i = blocks.length - 1; i >= 0; i--) {
+              if (blocks[i].broken && (!blocks[i].fragments || blocks[i].fragments.length === 0)) {
+                blocks.splice(i, 1);
+              }
             }
           }
 
-          blocks.forEach((block) => {
-            if (block.animate) block.animate(delta);
-            block.update?.(delta);
-
-            if (block.fragments && block.fragments.length > 0) {
-              block.updateAllFragments();
-            }
-          });
-
-          // Remove broken blocks
-          for (let i = blocks.length - 1; i >= 0; i--) {
-            if (blocks[i].broken && (!blocks[i].fragments || blocks[i].fragments.length === 0)) {
-              blocks.splice(i, 1);
-            }
-          }
-
-          if (players) {
+          if (players && players.length > 0) {
             players.forEach((player) => {
               player.update?.(delta, entities);
               player.animate?.(delta);
@@ -289,10 +357,10 @@ const Game = () => {
     return () => gameLoop.stop();
   }, [players, entities]);
 
-  if (blocks.length === 0) {
+  if (!levelData || blocks.length === 0) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <p className="text-white">Loading...</p>
+        <p className="text-white">Loading level {currentLevel}...</p>
       </div>
     );
   }
@@ -318,4 +386,4 @@ const Game = () => {
   );
 };
 
-export default Game;
+export default GameWrapper;

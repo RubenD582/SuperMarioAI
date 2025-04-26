@@ -1,12 +1,14 @@
 import {MAX_RUN, MAX_WALK} from "../constants/physicsConstants.jsx";
 
 export default class Entity {
-  constructor(x, y, width, height, imageHeight = null) {
+  constructor(x, y, width, height, imageHeight = null, layer = 0) {
     this.y = y;
     this.x = x;
 
     this.vx = 0;
     this.vy = 0;
+
+    this.layer = layer;
 
     this.width = width;
     this.height = height;
@@ -20,6 +22,7 @@ export default class Entity {
     this.imageHeight = imageHeight;
 
     this.start = false;
+    console.log(`Layer: ${layer}`, this);
   }
 
   // Call this when animation changes

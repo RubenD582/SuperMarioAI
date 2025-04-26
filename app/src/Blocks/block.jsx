@@ -6,7 +6,7 @@ import { Coin, Flower, Mushroom, Starman } from "./item.jsx";
 import EmptyBlock from '../assets/Sprites/EmptyBlock.png';
 
 export default class Block {
-  constructor(x, y, width, height, type, image, solid = false, content = null, contentQuantity = 1, collision = null) {
+  constructor(x, y, width, height, type, image, solid = false, content = null, contentQuantity = 1, collision = null, layer = 0) {
     Object.assign(this, {
       x, y, width, height, type, image, solid, content, collision,
       originalY: y,
@@ -19,7 +19,8 @@ export default class Block {
       fragments: [],
       spawnedItem: null,
       empty: false,
-      contentQuantity
+      contentQuantity,
+      layer,
     });
   }
 

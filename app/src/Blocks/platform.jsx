@@ -5,8 +5,8 @@ import {mapHeight} from "../screens/game.jsx";
 export let PlatformFrames = [PlatformSprite];
 
 export default class Platform extends Block {
-  constructor(x, y, width, height, image, collision, solid = true, content = null) {
-    super(x, y, width, height, "platform", image, solid, content);
+  constructor(x, y, width, height, image, collision, solid = true, content = null, layer = 0) {
+    super(x, y, width, height, "platform", image, solid, content, layer);
 
     this.direction = content.type;
     this.speed = 100;

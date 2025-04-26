@@ -1,4 +1,6 @@
-const DEBUG_MODE = true;
+import PipeTop from "../Blocks/pipeTop.jsx";
+
+const DEBUG_MODE = false;
 
 import Entity from './Entity';
 import Fireball from './fireball.jsx';
@@ -25,6 +27,7 @@ import Goomba from "./goomba.jsx";
 import Koopa from "./koopa.jsx";
 import Shell from "./shell.jsx";
 import PiranhaPlant from "./piranhaPlant.jsx";
+import {setLevel} from "../utils/levelManager.jsx";
 
 // Dynamic import of all sprite assets
 const spriteImports = import.meta.glob('../assets/Sprites/0/*.png', { eager: true });
@@ -109,6 +112,13 @@ export default class Player extends Entity {
 
     this.prevY = this.y;
 
+    this.inPipeAnimation = false;
+    this.pipeDirection = null;
+    this.pipeTargetLevel = null;
+    this.pipeTargetX = null;
+    this.pipeTargetY = null;
+    this.pipeAnimationSpeed = 30;
+
     if (DEBUG_MODE) {
       this.activateStarman();
       this.starmanTotalDuration = Math.infinity;
@@ -152,6 +162,17 @@ export default class Player extends Entity {
     this.prevX = this.x;
 
     if (this.currentAnimation !== 'dead') {
+      if (this.inPipeAnimation) {
+        // Check if we're in the delay period
+        if (this.pipeTransitionDelay > 0) {
+          this.pipeTransitionDelay -= delta;
+          return; // Skip the rest of the update
+        }
+
+        this.handlePipeAnimation(delta);
+        return;
+      }
+
       // Update starman timer if active
       if (this.starmanMode) {
         this.updateStarmanMode(delta);
@@ -467,7 +488,6 @@ export default class Player extends Entity {
     this.addItemCallback(fireball);
   }
 
-
   handleMovement(delta) {
     if (Math.abs(this.vx) < MIN_WALK) {
       this.vx = 0;
@@ -534,14 +554,11 @@ export default class Player extends Entity {
     const stompedEnemies = [];
 
     for (const entity of entities) {
-      // Only apply tolerance to side collisions, not to top collisions
-      const tolerance = entity instanceof Koopa ? entity.height / 3 : 0;
-
-      // Store base collision bounds
+      // Store basic collision checks
       let collisionX = this.x < entity.x + entity.width && this.x + this.width > entity.x;
       let collisionY = this.y < entity.y + entity.height && this.y + this.height > entity.y;
 
-      // Check for stomp specifically
+      // Stomp detection setup
       const playerBottom = this.y + this.height;
       const entityTop = entity.y;
       const wasAboveEntity = this.prevY + this.height <= entity.y + 5;
@@ -549,30 +566,36 @@ export default class Player extends Entity {
       const isTouchingTop = playerBottom >= entityTop && playerBottom <= entityTop + 15;
       const isSuccessfulTopHit = wasAboveEntity && isMovingDownward && isTouchingTop && collisionX;
 
-      // If it's a successful stomp, process it regardless of tolerance
-      if (isSuccessfulTopHit && (entity instanceof Goomba || entity instanceof Koopa) && !entity.isDead) {
+      // === Stomp-specific logic ===
+
+      if (isSuccessfulTopHit && entity instanceof Goomba && !entity.isDead) {
         stompedEnemies.push(entity);
         continue;
       }
 
+      if (isSuccessfulTopHit && entity instanceof Koopa && !entity.isDead) {
+        entity.handleShellDeath();  // Stomp Koopa = spawn Shell
+        this.vy = -200;             // Bounce player upwards
+        continue;
+      }
+
       if (isSuccessfulTopHit && entity instanceof Shell) {
-        entity.shoot(this.facing);
-        this.vy = -200;
+        if (entity.vx === 0) {
+          entity.shoot(this.facing);
+        } else {
+          entity.stop();
+        }
+        this.vy = -200; // Bounce after stomping Shell
         collisionX = false;
         continue;
       }
 
-      // Only process non-stomp collisions if there's a collision with tolerance applied
-      if (collisionX) {
-        if (entity instanceof Shell) {
-          if (entity.vx === 0) {
-            entity.shoot(this.facing);
-            continue;
-          }
-        }
-      }
-
       if (collisionX && collisionY) {
+        if (entity instanceof Koopa) {
+          entity.handleShellDeath();
+          this.vy = -200;
+        }
+
         if (entity instanceof PiranhaPlant) {
           if (this.starmanMode) {
             entity.dead();
@@ -585,10 +608,9 @@ export default class Player extends Entity {
         }
 
         if (entity instanceof Shell) {
-          if (Math.abs(entity.vx) >= 0) {
+          if (Math.abs(entity.vx) > 0) {
             if (this.starmanMode) {
-              console.log(entity);
-              if (entity.dead) entity.dead();
+              entity.dead();  // Use the consistent method name
             } else if (this.isBigMario) {
               this.shrink();
             } else if (!this.isInvincible) {
@@ -604,9 +626,9 @@ export default class Player extends Entity {
           continue;
         }
 
-        if ((entity instanceof Goomba || entity instanceof Koopa) && !entity.isDead) {
+        if (entity instanceof Goomba && !entity.isDead) {
           if (this.starmanMode) {
-            entity.dead(new Shell());
+            entity.dead(new Fireball());
           } else if (this.isBigMario) {
             this.shrink();
           } else if (!this.isInvincible) {
@@ -635,16 +657,17 @@ export default class Player extends Entity {
       }
     }
 
-    // Now handle all stomped enemies in one go
+    // === Handle all stomped enemies now (after loop) ===
     if (stompedEnemies.length > 0) {
-      this.vy = -200;
+      this.vy = -200; // Bounce after stomp
       for (const e of stompedEnemies) {
-        if (e instanceof Goomba || e instanceof Koopa) {
+        if (e instanceof Goomba) {
           e.dead(this);
         }
       }
     }
   }
+
 
 
   clampVelocity() {
@@ -747,6 +770,59 @@ export default class Player extends Entity {
     this.height = TILE_SIZE;
 
     this.originalY = this.y;
+  }
+
+  startPipeAnimation(direction, targetLevel, targetX, targetY) {
+    this.inPipeAnimation = true;
+    this.pipeDirection = direction;
+    this.pipeTargetLevel = targetLevel;
+    this.pipeTargetX = targetX * TILE_SIZE - TILE_SIZE / 2;
+    this.pipeTargetY = targetY * TILE_SIZE;
+
+    // Store the original position for animation reference
+    this.pipeStartX = this.x;
+    this.pipeStartY = this.y;
+
+    // Reset velocities
+    this.vx = 0;
+    this.vy = 0;
+  }
+
+  handlePipeAnimation(delta) {
+    const moveAmount = this.pipeAnimationSpeed * delta * SCALE;
+
+    if (this.pipeDirection === 'down') {
+      // Move Mario down into the pipe
+      this.y += moveAmount;
+
+      // Calculate when Mario should be fully inside the pipe
+      const fullyInsideY = this.pipeStartY + this.height;
+
+      // Check if Mario is fully inside the pipe
+      if (this.y > fullyInsideY) {
+        this.completePipeTransition();
+      }
+    }
+    else if (this.pipeDirection === 'right') {
+      // Move Mario right into the pipe
+      this.x += moveAmount;
+
+      // Check if Mario is fully inside the pipe
+      if (this.x > this.pipeStartX + this.width) {
+        this.completePipeTransition();
+      }
+    }
+  }
+
+  completePipeTransition() {
+    this.inPipeAnimation = false;
+
+    setLevel(this.pipeTargetLevel.replace(`level_`, ''));
+
+    this.x = this.pipeTargetX;
+    this.y = this.pipeTargetY;
+
+    this.facing = 'right';
   }
 
   dead() {

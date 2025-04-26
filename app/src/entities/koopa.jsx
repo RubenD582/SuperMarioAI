@@ -8,8 +8,8 @@ const koopaRedFrames = import.meta.glob('../assets/Sprites/Koopa_Walk_Red*.png',
 const koopaUndergroundFrames = import.meta.glob('../assets/Sprites/Koopa_Walk_underground*.png', { eager: true });
 
 export default class Koopa extends Entity {
-  constructor(x, y, collision, addItemCallback, isRedKoopa = false) {
-    super(x, y, 32, 32, 64);
+  constructor(x, y, collision, addItemCallback, isRedKoopa = false, layer) {
+    super(x, y, 32, 32, 64, layer);
 
     this.addItemCallback = addItemCallback;
     this.collision = collision;
@@ -20,14 +20,13 @@ export default class Koopa extends Entity {
     this.isDead = false;
     this.gravity = 1000;
 
-    this.keys = { left: false, right: false, up: false, down: false, b: false };
     this.currentAnimation = 'walk';
     this.animations = {};
     this.remove = false;
     this.killedByFireball = false;
     this.flipY = false;
-
     this.isRedKoopa = isRedKoopa;
+    this.collisionCooldown = 0;
 
     const frameMap = this.isRedKoopa
       ? koopaRedFrames
@@ -38,7 +37,6 @@ export default class Koopa extends Entity {
     this.koopaFrames = Object.keys(frameMap)
       .sort()
       .map(path => frameMap[path].default);
-
 
     this.preloadAnimations();
   }
@@ -55,7 +53,6 @@ export default class Koopa extends Entity {
     });
   }
 
-
   getCurrentAnimationFrames() {
     return this.animations[this.currentAnimation] || this.animations.idle;
   }
@@ -70,7 +67,6 @@ export default class Koopa extends Entity {
     if (!this.start) return;
 
     if (!this.isDead) {
-      if (this.collisionCooldown === undefined) this.collisionCooldown = 0;
       if (this.collisionCooldown > 0) this.collisionCooldown -= delta;
 
       this.vy += this.gravity * delta;
@@ -97,19 +93,17 @@ export default class Koopa extends Entity {
 
           if (this.x < entity.x) {
             this.x -= overlapX / 2;
-            this.collision.checkHorizontalCollisions(this);
           } else {
             this.x += overlapX / 2;
-            this.collision.checkHorizontalCollisions(this);
           }
 
+          this.collision.checkHorizontalCollisions(this);
           this.vx = -this.vx;
 
-          if (entity instanceof Fireball || entity instanceof Shell) {
-            entity.explode = true;
-            this.dead(entity);
-          } else if (entity instanceof Shell && !entity.hasOwnProperty('explode')) {
-            this.dead(entity);
+          if (entity instanceof Fireball) {
+            this.handleFireballDeath();
+          } else if (entity instanceof Shell) {
+            this.handleShellDeath();
           }
         }
       });
@@ -133,18 +127,24 @@ export default class Koopa extends Entity {
     );
   }
 
-  dead(object) {
-    if (object instanceof Fireball || object instanceof Shell) {
-      this.isDead = true;
-      this.killedByFireball = true;
-      this.flipY = true;
-      this.vx = 0;
-      this.vy = -300;
-    } else {
-      this.addItemCallback(new Shell(this.x, this.y, this.collision));
-      this.remove = true;
-      this.isDead = true;
-      this.vx = 0;
-    }
+  handleFireballDeath() {
+    this.isDead = true;
+    this.killedByFireball = true;
+    this.flipY = true;
+    this.vx = 0;
+    this.vy = -300;
+  }
+
+  handleShellDeath() {
+    this.spawnShell();
+    this.remove = true;
+    this.isDead = true;
+  }
+
+  spawnShell() {
+    const shell = new Shell(this.x, this.y, this.collision);
+    shell.vx = 0;
+    shell.vy = 0;
+    this.addItemCallback(shell);
   }
 }

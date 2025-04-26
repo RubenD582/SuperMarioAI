@@ -2026,7 +2026,13 @@
       null,
       null,
       null,
-      "pipeTop",
+      {
+        "id": "pipeTop",
+        "content": {
+          "type": "level",
+          "level": "level_1-1a"
+        }
+      },
       null,
       null,
       null,

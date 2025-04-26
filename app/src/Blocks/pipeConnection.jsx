@@ -1,11 +1,11 @@
-import Pipe from '../assets/Sprites/PipeTop.png';
+import PipeConnectionSprite from '../assets/Sprites/PipeConnection.png';
 import Block from './block.jsx';
 
-export let PipeFrames = [Pipe];
+export let PipeConnectionFrames = [PipeConnectionSprite];
 
-export default class PipeTop extends Block {
+export default class PipeConnection extends Block {
   constructor(x, y, width, height, image, collision, solid = true, content = null, layer = 0) {
-    super(x, y, width, height, "pipeTop", image, solid, content, layer);
+    super(x, y, width, height, "pipeConnection", image, solid, content, layer);
 
     this.collision = collision;
     this.complete = false;
@@ -21,7 +21,7 @@ export default class PipeTop extends Block {
   }
 
   preloadAnimations() {
-    this.animations['none'] = this.preloadImages(PipeFrames);
+    this.animations['none'] = this.preloadImages(PipeConnectionFrames);
   }
 
   preloadImages(srcArray) {

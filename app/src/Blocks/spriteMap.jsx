@@ -25,33 +25,43 @@ import goomba from '../assets/Sprites/Goomba_Walk1.png';
 import koopa from '../assets/Sprites/Koopa_Walk_Green1.png';
 import koopaRed from '../assets/Sprites/Koopa_Walk_Red1.png';
 
+// 0 - Background items
+// 1 - Solid blocks
+// 2 - Foreground
+
 export const imageList = [
-  { id: 'ground', url: ground, w: 32, h: 32, solid: true },
-  { id: 'mystery', url: mystery, w: 32, h: 32, solid: true },
-  { id: 'brick', url: brick, w: 32, h: 32, solid: true },
-  { id: 'hard', url: hard, w: 32, h: 32, solid: true },
-  { id: 'pipeTop', url: pipeTop, w: 64, h: 32, solid: true },
-  { id: 'pipeBottom', url: pipeBottom, w: 64, h: 32, solid: true },
-  { id: 'hill1', url: hill1, w: 160, h: 96, solid: false },
-  { id: 'hill2', url: hill2, w: 160, h: 96, solid: false },
-  { id: 'cloud1', url: cloud1, w: 96, h: 64, solid: false },
-  { id: 'cloud2', url: cloud2, w: 128, h: 64, solid: false },
-  { id: 'cloud3', url: cloud3, w: 160, h: 64, solid: false },
-  { id: 'bush1', url: bush1, w: 96, h: 32, solid: false },
-  { id: 'bush2', url: bush2, w: 128, h: 32, solid: false },
-  { id: 'bush3', url: bush3, w: 160, h: 32, solid: false },
-  { id: 'underground', url: underground, w: 32, h: 32, solid: true },
-  { id: 'undergroundBrick', url: undergroundBrick, w: 32, h: 32, solid: true },
-  { id: 'hardBlockUnderground', url: hardBlockUnderground, w: 32, h: 32, solid: true },
-  { id: 'coinUnderground', url: coinUnderground, w: 32, h: 32, solid: false },
-  { id: 'platform', url: platform, w: 96, h: 32, solid: true },
-  { id: 'pipeConnection', url: pipeConnection, w: 128, h: 96, solid: true },
-  { id: 'castle', url: castle, w: 160, h: 160, solid: false },
-  { id: 'flagPole', url: flagPole, w: 32, h: 320, solid: false },
-  { id: 'flag', url: flag, w: 64, h: 32, solid: false },
-  { id: 'goomba', url: goomba, w: 32, h: 32, solid: false },
-  { id: 'koopa', url: koopa, w: 32, h: 64, solid: false },
-  { id: 'koopaRed', url: koopaRed, w: 32, h: 64, solid: false },
+  // SOLID BLOCKS - Layer 2
+  { id: 'ground', url: ground, w: 32, h: 32, solid: true, layer: 2 },
+  { id: 'mystery', url: mystery, w: 32, h: 32, solid: true, layer: 2 },
+  { id: 'brick', url: brick, w: 32, h: 32, solid: true, layer: 2 },
+  { id: 'hard', url: hard, w: 32, h: 32, solid: true, layer: 2 },
+  { id: 'pipeTop', url: pipeTop, w: 64, h: 32, solid: true, layer: 2 },
+  { id: 'pipeBottom', url: pipeBottom, w: 64, h: 32, solid: true, layer: 2 },
+  { id: 'underground', url: underground, w: 32, h: 32, solid: true, layer: 2 },
+  { id: 'undergroundBrick', url: undergroundBrick, w: 32, h: 32, solid: true, layer: 2 },
+  { id: 'hardBlockUnderground', url: hardBlockUnderground, w: 32, h: 32, solid: true, layer: 2 },
+  { id: 'platform', url: platform, w: 96, h: 32, solid: true, layer: 2 },
+  { id: 'pipeConnection', url: pipeConnection, w: 128, h: 64, solid: true, layer: 2 },
+
+  // BACKGROUND ITEMS - Layer 0
+  { id: 'hill1', url: hill1, w: 160, h: 96, solid: false, layer: 0 },
+  { id: 'hill2', url: hill2, w: 160, h: 96, solid: false, layer: 0 },
+  { id: 'cloud1', url: cloud1, w: 96, h: 64, solid: false, layer: 0 },
+  { id: 'cloud2', url: cloud2, w: 128, h: 64, solid: false, layer: 0 },
+  { id: 'cloud3', url: cloud3, w: 160, h: 64, solid: false, layer: 0 },
+  { id: 'bush1', url: bush1, w: 96, h: 32, solid: false, layer: 0 },
+  { id: 'bush2', url: bush2, w: 128, h: 32, solid: false, layer: 0 },
+  { id: 'bush3', url: bush3, w: 160, h: 32, solid: false, layer: 0 },
+
+  // FOREGROUND ITEMS - Layer 3
+  { id: 'castle', url: castle, w: 160, h: 160, solid: false, layer: 3 },
+  { id: 'flagPole', url: flagPole, w: 32, h: 320, solid: false, layer: 3 },
+  { id: 'flag', url: flag, w: 64, h: 32, solid: false, layer: 3 },
+
+  // ENEMIES - Layer 2 (still in-world)
+  { id: 'goomba', url: goomba, w: 32, h: 32, solid: false, layer: 2 },
+  { id: 'koopa', url: koopa, w: 32, h: 64, solid: false, layer: 2 },
+  { id: 'koopaRed', url: koopaRed, w: 32, h: 64, solid: false, layer: 2 },
 ];
 
 // Create a lookup object by ID for easier access

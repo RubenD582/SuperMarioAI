@@ -1,21 +1,269 @@
-import React, {useEffect, useRef} from 'react';
-import { blocks } from '../screens/game.jsx';
+import React, { useEffect, useRef, useState } from 'react';
+import {blocks, mapType, mapWidth} from '../screens/game.jsx';
 import Fireball from "../entities/fireball.jsx";
 import Goomba from "../entities/goomba.jsx";
 import Item from "../Blocks/item.jsx";
 import Koopa from "../entities/koopa.jsx";
 import Shell from "../entities/shell.jsx";
 import PiranhaPlant from "../entities/piranhaPlant.jsx";
-import {DRAW_HITBOX, TILE_SIZE} from "../constants/constants.jsx";
+import {DRAW_HITBOX, TILE_SIZE, TV_EFFECT} from "../constants/constants.jsx";
+import Block from "../Blocks/block.jsx";
+
+const OldTVEffects = React.forwardRef(({
+  width = 800,
+  height = 600,
+  children,
+  effectIntensity = 0.7,
+  snowEffectInterval = 50,
+  numSnowFrames = 10
+}, ref) => {
+  const canvasRef = useRef(null); // Snow effect canvas
+  const contentRef = useRef(null); // Main content canvas
+  const noiseCanvasRef = useRef(null); // Noise canvas
+  const scanlineCanvasRef = useRef(null); // Scanline canvas
+  const vignetteCanvasRef = useRef(null); // Vignette canvas
+
+  const animationRef = useRef(null);
+  const [snowFrames, setSnowFrames] = useState([]); // Store pre-generated snow frames
+  const [currentSnowFrame, setCurrentSnowFrame] = useState(0); // Index to cycle through snow frames
+
+  React.useImperativeHandle(ref, () => ({
+    contentCanvas: contentRef
+  }));
+
+  // Function to create a random snow effect (static)
+  const createSnowEffect = (w, h) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.createImageData(w, h);
+    const data = imageData.data;
+
+    // Fill the canvas with random static (grayscale)
+    for (let i = 0; i < data.length; i += 16) {
+      const noise = Math.random() * 100;
+      data[i] = noise;        // Red channel
+      data[i + 1] = noise;    // Green channel
+      data[i + 2] = noise;    // Blue channel
+      data[i + 3] = Math.random() * 100 ; // Transparency (light snow effect)
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    return canvas;
+  };
+
+  // Function to create the scanline effect
+  const createScanlineEffect = (w, h) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; // Light black for scanlines
+
+    // Draw horizontal scanlines
+    const lineHeight = 1; // Height of each scanline
+    for (let y = 0; y < h; y += lineHeight * 2) {
+      ctx.fillRect(0, y, w, lineHeight);
+    }
+
+    return canvas;
+  };
+
+  // Function to create the vignette effect
+  const createVignetteEffect = (w, h) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Create a radial gradient from the center to the corners, blending the edges with black
+    const gradient = ctx.createRadialGradient(
+      w / 2, h / 2, 0,            // Center of the canvas
+      w / 2, h / 2, Math.max(w, h) * 0// To the corners (adjust this factor for fuzziness)
+    );
+
+    // Add color stops for black in the center, and transparent on the edges
+    gradient.addColorStop(0.8, 'rgba(0, 0, 0, 0)');      // Transparent center
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 1)');    // Fading to black at the edges
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);  // Apply the gradient to the entire canvas
+
+    return canvas;
+  };
+
+
+
+  // Function to create noise layer
+  const createNoiseLayer = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.createImageData(width, height);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const noise = Math.random() * 255;
+      data[i] = noise;
+      data[i + 1] = noise;
+      data[i + 2] = noise;
+      data[i + 3] = Math.random() * 50;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    return canvas;
+  };
+
+  // Generate the snow effect frames
+  useEffect(() => {
+    const generatedFrames = [];
+    for (let i = 0; i < numSnowFrames; i++) {
+      generatedFrames.push(createSnowEffect(width, height));
+    }
+    setSnowFrames(generatedFrames);
+
+    const intervalId = setInterval(() => {
+      setCurrentSnowFrame((prevFrame) => (prevFrame + 1) % numSnowFrames);
+    }, snowEffectInterval);
+
+    return () => clearInterval(intervalId);
+  }, [width, height, snowEffectInterval, numSnowFrames]);
+
+  // Create the effect layers once
+  useEffect(() => {
+    noiseCanvasRef.current = createNoiseLayer();
+    scanlineCanvasRef.current = createScanlineEffect(width, height);
+    vignetteCanvasRef.current = createVignetteEffect(width, height);
+  }, [width, height]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !contentRef.current || snowFrames.length === 0) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const scanlineCanvas = scanlineCanvasRef.current;
+    const vignetteCanvas = vignetteCanvasRef.current;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    let time = 0;
+    let rollOffset = 0;
+    let rollPhase = 0;
+    let activeRollBar = null;
+
+    const render = () => {
+      time += 0.016;
+      ctx.clearRect(0, 0, width, height);
+      ctx.save();
+
+      ctx.globalAlpha = 0.25;
+      ctx.drawImage(snowFrames[currentSnowFrame], 0, 0);
+      ctx.globalAlpha = 1;
+
+      ctx.drawImage(noiseCanvasRef.current, 0, 0);
+      ctx.drawImage(scanlineCanvas, 0, 0);
+      ctx.drawImage(vignetteCanvas, 0, 0);
+
+      // Rolling bar logic
+      rollPhase += 0.01 * effectIntensity;
+
+      if (!activeRollBar && Math.random() < 0.1 * effectIntensity) {
+        activeRollBar = {
+          y: Math.random() * height,
+          speed: 30 + Math.random() * 50,
+          height: 20 + Math.random() * 10,
+          alpha: 0.2,
+        };
+      }
+
+      if (activeRollBar) {
+        activeRollBar.y += activeRollBar.speed * 0.016; // Move based on time
+
+        ctx.globalAlpha = activeRollBar.alpha;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, activeRollBar.y, width, activeRollBar.height);
+        ctx.globalAlpha = 1;
+
+        if (activeRollBar.y > height) {
+          activeRollBar = null; // Remove after leaving screen
+        }
+      }
+
+      // Glitch line
+      if (Math.random() < 0.05 * effectIntensity) {
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        const y = Math.random() * height;
+        ctx.fillRect(0, y, width, 2);
+      }
+
+      ctx.restore();
+      animationRef.current = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [width, height, snowFrames, currentSnowFrame, effectIntensity]);
+
+  return (
+    <div style={{ position: 'relative', width, height, overflow: 'hidden' }}>
+      {/* Main game content */}
+      <canvas
+        ref={contentRef}
+        width={width}
+        height={height}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 10,
+        }}
+      />
+      {/* Effects overlay (noise, scanlines, vignette) */}
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          imageRendering: 'pixelated',
+          msInterpolationMode: 'nearest-neighbor',
+          zIndex: 20,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          visibility: 'hidden',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+});
 
 const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundColor = '#000000', cameraX = 0, style = {} }, ref) => {
   const canvasRef = useRef(null);
+  const oldTVRef = useRef(null);
   const scale = window.devicePixelRatio || 1;
-
-  // Store the latest cameraX value in a ref to access when needed
   const cameraXRef = useRef(cameraX);
 
-  // Update the ref when the prop changes
   useEffect(() => {
     cameraXRef.current = cameraX;
     drawLevel();
@@ -25,15 +273,16 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     drawLevel();
   }, [blocks]);
 
-  // Handle resize and initial setup
   useEffect(() => {
     const handleResize = () => {
       const canvas = canvasRef.current;
       if (!canvas || !blocks.length) return;
 
-      const screenWidth = TILE_SIZE * 26;// window.innerWidth;
+      let screenWidth = TILE_SIZE * 26;
+      if (mapWidth <= TILE_SIZE * 26) {
+        screenWidth = mapWidth;
+      }
 
-      // 🧠 Calculate max Y based on the highest block's Y position + its height
       const canvasHeight = Math.max(...blocks.map(block => block.y + block.height), 0);
 
       canvas.width = screenWidth * scale;
@@ -53,96 +302,111 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     };
   }, [blocks]);
 
-  // This method is called by the Game component's animation loop via ref
   const renderFrame = () => {
     drawLevel();
   };
 
-  // Expose the renderFrame method to the parent via ref
   React.useImperativeHandle(ref, () => ({
     renderFrame
   }));
 
   const drawLevel = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const contentCanvas = oldTVRef.current?.contentCanvas?.current;
+
+    if (!canvas || !blocks.length) return;
 
     const ctx = canvas.getContext('2d');
-    if (!ctx || !blocks.length) return;
+    if (!ctx) return;
 
-    // Calculate visible area and bounds
-    const screenWidth = TILE_SIZE * 26; // window.innerWidth;
+    const screenWidth = TILE_SIZE * 26;
     const screenHeight = window.innerHeight;
     const leftBound = cameraXRef.current - 50;
     const rightBound = cameraXRef.current + screenWidth + 50;
 
-    // Apply scale and background settings
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.imageSmoothingEnabled = false;
 
-    // Fill the background
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
 
-    // Save context state before moving it to the camera's position
     ctx.save();
     ctx.translate(-cameraXRef.current, 0);
 
-    // 1. Draw items and plants
-    entities.forEach(entity => {
-      if (entity instanceof Item || entity instanceof PiranhaPlant) {
-        entity.draw(ctx, entity instanceof PiranhaPlant ? entity.flipY : undefined);
-      }
-    });
-
-    // 2. Draw blocks within visible bounds
-    blocks.forEach(block => {
-      if (block.x + block.width >= leftBound && block.x <= rightBound) {
-        block.draw(ctx);
-        if (block.fragments?.length > 0) {
-          block.drawAllFragments(ctx);
+    // Draw blocks (layers 0, 1, 2, and 3) and entities (Items, PiranhaPlants, Goombas, Koopas, Shells, Fireballs)
+    [...blocks, ...entities].forEach(item => {
+      // Draw blocks
+      if (item instanceof Block) {
+        if (item.x + item.width >= leftBound && item.x <= rightBound) {
+          item.draw(ctx);
+          if (item.fragments?.length > 0) {
+            item.drawAllFragments(ctx);
+          }
         }
       }
-    });
-
-    // 3. Draw fireballs
-    entities.filter(entity => entity instanceof Fireball).forEach(entity => {
-      entity.draw(ctx);
-    });
-
-    // 4. Draw Goombas, Koopa, and Shells within bounds
-    entities.forEach(entity => {
-      if ((entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell) &&
-        entity.x + entity.width >= leftBound && entity.x <= rightBound) {
-        entity.start = true;
-        entity.draw(ctx, entity.flipY);
-        DRAW_HITBOX ? entity.collision.drawDebug(ctx, entity) : null;
+      // Draw entities (Items, PiranhaPlants, Goombas, Koopas, Shells, Fireballs)
+      else if (item instanceof Item || item instanceof PiranhaPlant) {
+        item.draw(ctx, item instanceof PiranhaPlant ? item.flipY : undefined);
+      }
+      else if (item instanceof Goomba || item instanceof Koopa || item instanceof Shell) {
+        if (item.x + item.width >= leftBound && item.x <= rightBound) {
+          item.start = true;
+          item.draw(ctx, item.flipY);
+          if (DRAW_HITBOX) {
+            item.collision.drawDebug(ctx, item);
+          }
+        }
+      }
+      else if (item instanceof Fireball) {
+        item.draw(ctx);
       }
     });
 
-    // 5. Draw players (only if visible and not invincible)
+    // Draw players
     players.forEach(player => {
       if (player.isInvincible && !player.visibilityToggle) return;
       player.draw(ctx);
-      DRAW_HITBOX ? player.collision.drawDebug(ctx, player) : null;
+      if (DRAW_HITBOX) {
+        player.collision.drawDebug(ctx, player);
+      }
     });
 
-    // Restore context to its original state
     ctx.restore();
+
+    if (contentCanvas) {
+      const contentCtx = contentCanvas.getContext('2d');
+      if (contentCtx) {
+        contentCtx.clearRect(0, 0, contentCanvas.width, contentCanvas.height);
+        contentCtx.drawImage(canvas, 0, 0, contentCanvas.width, contentCanvas.height);
+      }
+    }
   };
 
+
   return (
-    <canvas
-      ref={(node) => {
-        canvasRef.current = node;
-      }}
-      style={{
-        imageRendering: 'pixelated',
-        msInterpolationMode: 'nearest-neighbor',
-        ...style
-      }}
-    />
+    TV_EFFECT ? (
+      <OldTVEffects ref={oldTVRef} width={800} height={600} effectIntensity={0.1}>
+        <canvas
+          ref={canvasRef}
+          style={{
+            imageRendering: 'pixelated',
+            msInterpolationMode: 'nearest-neighbor',
+            ...style
+          }}
+        />
+      </OldTVEffects>
+    ) : (
+      <canvas
+        ref={canvasRef}
+        style={{
+          imageRendering: 'pixelated',
+          msInterpolationMode: 'nearest-neighbor',
+          ...style
+        }}
+      />
+    )
   );
+
 });
 
 export default DrawLevel;

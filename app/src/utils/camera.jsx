@@ -12,7 +12,7 @@ const useCamera = () => {
 
   const OFFSET = TILE_SIZE * 2;
 
-  const screenWidth = window.innerWidth;
+  let screenWidth = TILE_SIZE * 26;
 
   const handleKey = (down) => (e) => {
     if (e.key === 'ArrowLeft') keys.current.left = down;
@@ -30,16 +30,19 @@ const useCamera = () => {
   }, []);
 
   const updateCamera = (dt) => {
-    let currentCameraX = 0;
+    if (mapWidth >= TILE_SIZE * 26) {
+      let currentCameraX = 0;
+      if ((playerX - OFFSET) >= TILE_SIZE * 10) {
+        currentCameraX = (playerX - OFFSET) - TILE_SIZE * 10;
+      }
+      // Clamp camera to right edge of the map
+      currentCameraX = Math.min(currentCameraX, mapWidth);
 
-    if ((playerX - OFFSET) >= TILE_SIZE * 10) {
-      currentCameraX = (playerX - OFFSET) - TILE_SIZE * 10;
+      setCameraX(prev => lerp(prev, currentCameraX, LERP_FACTOR));
+    } else {
+      // Camera does not have to move, because the map is smaller than the visible view range
+      setCameraX(prev => lerp(prev, 0, LERP_FACTOR));
     }
-
-    // Clamp camera to right edge of the map
-    currentCameraX = Math.min(currentCameraX, mapWidth);
-
-    setCameraX(prev => lerp(prev, currentCameraX, LERP_FACTOR));
   };
 
   const lerp = (current, target, factor) => {

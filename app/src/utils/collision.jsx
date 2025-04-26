@@ -1,10 +1,11 @@
 import { TILE_SIZE } from "../constants/constants.jsx";
-import { blocks } from '../screens/game.jsx';
+import {blocks, mapType} from '../screens/game.jsx';
 import { Mushroom, Starman } from "../Blocks/item.jsx";
 import Player from '../entities/player.jsx';
 import Goomba from "../entities/goomba.jsx";
 import Koopa from "../entities/koopa.jsx";
 import Shell from "../entities/shell.jsx";
+import { setLevel } from '../utils/levelManager.jsx';
 
 export default class Collision {
   constructor(addItemCallback) {
@@ -68,6 +69,16 @@ export default class Collision {
       if (e.vx > 0 && bounds.right > blockBounds.left && bounds.left < blockBounds.left) {
         this.handleEntityBlockCollision(e, blockBounds.left - e.width);
         hitObject = true;
+
+        if (e instanceof Player) {
+          // Mario going inside the pipe to the right
+          if (block.type === "pipeConnection" && e.keys.right && block.content.data.level) {
+            e.currentAnimation = "run";
+            e.startPipeAnimation('right', block.content.data.level, block.content.data.x, block.content.data.y);
+            return true;
+          }
+        }
+
       } else if (e.vx < 0 && bounds.left < blockBounds.right && bounds.right > blockBounds.right) {
         this.handleEntityBlockCollision(e, blockBounds.right);
         hitObject = true;
@@ -111,6 +122,20 @@ export default class Collision {
           e.vy = 0;
           e.grounded = true;
           collidedVertically = true;
+
+          if (e instanceof Player) {
+            // Mario going down a pipe
+            if (block.type === 'pipeTop' && e.keys.down && block.content?.level) {
+              // Make sure we're accessing the data correctly
+              const targetLevel = block.content?.level || block.content?.data?.level;
+              const targetX = block.content?.data?.x || 2;
+              const targetY = block.content?.data?.y || (mapType === "underground" ? 0 : 0);
+
+              e.currentAnimation = "idle";
+              e.startPipeAnimation('down', targetLevel, targetX, targetY);
+              return true;
+            }
+          }
         }
         // Jumping (hitting from below)
         else if (

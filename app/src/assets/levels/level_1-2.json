@@ -1,5 +1,4 @@
 {
-  "mapType": "underground",
   "backgroundColor": "#000000",
   "map": [
     [
@@ -1542,9 +1541,9 @@
       null,
       null,
       null,
-      "pipeConnection",
       null,
       null,
+      "pipeBottom",
       null,
       "undergroundBrick",
       "undergroundBrick",
@@ -1757,7 +1756,7 @@
       null,
       null,
       null,
-      null,
+      "pipeConnection",
       null,
       null,
       null,

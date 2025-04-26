@@ -16,8 +16,8 @@ export let GoombaFrames  = [Goomba1, Goomba2];
 export let GoombaFlatFrames = [GoombaFlat];
 
 export default class Goomba extends Entity {
-  constructor(x, y, collision) {
-    super(x, y, 32, 32);
+  constructor(x, y, collision, layer = 2) {
+    super(x, y, 32, 32, layer);
 
     this.collision = collision;
     this.vx = -50;

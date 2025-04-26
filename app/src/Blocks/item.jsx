@@ -17,7 +17,7 @@ import Starman4 from '../assets/Sprites/Starman4.png';
 import { TILE_SIZE } from '../constants/constants.jsx';
 
 export default class Item {
-  constructor(x, y, itemType) {
+  constructor(x, y, itemType, layer) {
     this.x = x;
     this.y = y;
     this.itemType = itemType;
@@ -28,6 +28,9 @@ export default class Item {
     this.itemFrameTime = 0;
     this.itemFrameDuration = 0.0;
     this.itemAnimations = this.loadItemAnimations();
+    this.layer = layer;
+
+    console.log(layer);
   }
 
   loadItemAnimations() {

@@ -10,8 +10,8 @@ import {TILE_SIZE} from "../constants/constants.jsx";
 export let PiranhaPlantFrames = [PiranhaPlant1, PiranhaPlant2];
 
 export default class PiranhaPlant extends Entity {
-  constructor(x, y, collision) {
-    super(x + TILE_SIZE / 2, y, 32, 48);
+  constructor(x, y, collision, layer = 0) {
+    super(x + TILE_SIZE / 2, y, 32, 48, layer);
 
     this.speed = 25;
     this.dy = -this.speed;

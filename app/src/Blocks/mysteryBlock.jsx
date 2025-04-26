@@ -15,8 +15,8 @@ export let BlockFrames;
 export let EmptyBlockFrame;
 
 export default class MysteryBlock extends Block {
-  constructor(x, y, width, height, image, collision, solid = true, content = null) {
-    super(x, y, width, height, "mystery", image, solid, content);
+  constructor(x, y, width, height, image, collision, solid = true, content = null, layer = 0) {
+    super(x, y, width, height, "mystery", image, solid, content, layer);
     this.collision = collision;
     this.complete = false;
     this.points = 200;

@@ -1,10 +1,9 @@
 import Entity from './Entity';
-
 import KoopaShell from '../assets/Sprites/Koopa_Shell_Green.png';
 import KoopaShellUnderground from '../assets/Sprites/Koopa_Shell_underground.png';
-import {mapType} from "../screens/game.jsx";
+import { mapType } from "../screens/game.jsx";
 
-export let ShellFrames  = [KoopaShell];
+export let ShellFrames = [KoopaShell];
 
 export default class Shell extends Entity {
   constructor(x, y, collision) {
@@ -17,27 +16,29 @@ export default class Shell extends Entity {
 
     this.grounded = true;
     this.isDead = false;
-
     this.gravity = 1000;
-
-    this.keys = { left: false, right: false, up: false, down: false, b: false };
 
     this.currentAnimation = 'shell';
     this.animations = {};
 
     this.remove = false;
-
     this.killedByFireball = false;
     this.flipY = false;
+    this.spawnCooldown = 0.15;  // Immunity period after spawning
+    this.active = false;  // Initially inactive to prevent immediate collisions
+
+    // Track elapsed time since spawning
+    this.elapsedTime = 0;
 
     if (mapType === 'underground') {
       ShellFrames = [KoopaShellUnderground];
     }
+
     this.preloadAnimations();
   }
 
   preloadAnimations() {
-    this.animations.shell  = this.preloadImages(ShellFrames);
+    this.animations.shell = this.preloadImages(ShellFrames);
   }
 
   preloadImages(srcArray) {
@@ -55,11 +56,21 @@ export default class Shell extends Entity {
   animate(deltaTime) {
     const frames = this.getCurrentAnimationFrames();
     this.setAnimationFrames(frames);
-
     super.animate(deltaTime, 0.1);
   }
 
-  update(delta, fireballs) {
+  update(delta, entities) {
+    // Track elapsed time
+    this.elapsedTime += delta;
+
+    // Handle spawn cooldown
+    if (this.spawnCooldown > 0) {
+      this.spawnCooldown -= delta;
+      if (this.spawnCooldown <= 0) {
+        this.active = true;  // Shell becomes active after cooldown
+      }
+    }
+
     if (!this.isDead) {
       this.vy += this.gravity * delta;
       this.y += this.vy * delta;
@@ -68,12 +79,15 @@ export default class Shell extends Entity {
       this.collision.checkHorizontalCollisions(this);
       this.collision.checkVerticalCollisions(this);
 
-      fireballs.forEach(fireball => {
-        if (!fireball.explode && this.checkCollision(fireball)) {
-          fireball.explode = true;
-          this.dead = true;
-        }
-      });
+      // Only check for fireball collisions if entities is an array
+      if (Array.isArray(entities)) {
+        entities.forEach(entity => {
+          if (entity.constructor.name === "Fireball" && !entity.explode && this.checkCollision(entity)) {
+            entity.explode = true;
+            this.killedByFireball();
+          }
+        });
+      }
 
       if (this.vx < 0) this.facing = "right";
       if (this.vx > 0) this.facing = "left";
@@ -88,10 +102,18 @@ export default class Shell extends Entity {
   }
 
   shoot(direction) {
-    this.vx = direction === 'left' ? this.vx = -this.speed : this.vx = this.speed;
+    if (this.isDead) return;
+    this.vx = direction === 'left' ? -this.speed : this.speed;
+  }
+
+  stop() {
+    this.vx = 0;
   }
 
   checkCollision(other) {
+    // Don't collide if we're in cooldown period
+    if (!this.active) return false;
+
     return (
       this.x < other.x + other.width &&
       this.x + this.width > other.x &&
@@ -100,7 +122,19 @@ export default class Shell extends Entity {
     );
   }
 
+  // Rename to be more specific about what killed the shell
+  killedByFireball() {
+    this.isDead = true;
+    this.killedByFireball = true;
+    this.flipY = true;
+    this.vy = -300;
+  }
+
+  // General death method for other types of deaths
   dead() {
-    this.remove = true;
+    if (!this.isDead) {
+      this.isDead = true;
+      this.remove = true;
+    }
   }
 }
