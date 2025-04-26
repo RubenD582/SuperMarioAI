@@ -1,6 +1,12 @@
 import React, {useEffect, useRef} from 'react';
 import { blocks } from '../screens/game.jsx';
 import Fireball from "../entities/fireball.jsx";
+import Goomba from "../entities/goomba.jsx";
+import Item from "../Blocks/item.jsx";
+import Koopa from "../entities/koopa.jsx";
+import Shell from "../entities/shell.jsx";
+import PiranhaPlant from "../entities/piranhaPlant.jsx";
+import {DRAW_HITBOX, TILE_SIZE} from "../constants/constants.jsx";
 
 const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundColor = '#000000', cameraX = 0, style = {} }, ref) => {
   const canvasRef = useRef(null);
@@ -25,7 +31,7 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
       const canvas = canvasRef.current;
       if (!canvas || !blocks.length) return;
 
-      const screenWidth = window.innerWidth;
+      const screenWidth = TILE_SIZE * 26;// window.innerWidth;
 
       // 🧠 Calculate max Y based on the highest block's Y position + its height
       const canvasHeight = Math.max(...blocks.map(block => block.y + block.height), 0);
@@ -64,50 +70,64 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     const ctx = canvas.getContext('2d');
     if (!ctx || !blocks.length) return;
 
-    // Calculate visible area
-    const screenWidth = window.innerWidth;
+    // Calculate visible area and bounds
+    const screenWidth = TILE_SIZE * 26; // window.innerWidth;
     const screenHeight = window.innerHeight;
-
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
-
-    ctx.save();
-    ctx.translate(-cameraXRef.current, 0);
-
     const leftBound = cameraXRef.current - 50;
     const rightBound = cameraXRef.current + screenWidth + 50;
 
-    for (const entity of entities) {
-      if (entity instanceof Fireball) continue;
+    // Apply scale and background settings
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.imageSmoothingEnabled = false;
 
-      entity.draw(ctx);
-    }
+    // Fill the background
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
 
-    // Draw each block with the camera context
-    for (const block of blocks) {
-      // Only draw if block is in the visible area
+    // Save context state before moving it to the camera's position
+    ctx.save();
+    ctx.translate(-cameraXRef.current, 0);
+
+    // 1. Draw items and plants
+    entities.forEach(entity => {
+      if (entity instanceof Item || entity instanceof PiranhaPlant) {
+        entity.draw(ctx, entity instanceof PiranhaPlant ? entity.flipY : undefined);
+      }
+    });
+
+    // 2. Draw blocks within visible bounds
+    blocks.forEach(block => {
       if (block.x + block.width >= leftBound && block.x <= rightBound) {
         block.draw(ctx);
-        if (block.fragments && block.fragments.length > 0) {
+        if (block.fragments?.length > 0) {
           block.drawAllFragments(ctx);
         }
       }
-    }
+    });
 
-    // Draw fireball on top of the tiles
-    for (const entity of entities) {
-      if (entity instanceof Fireball) {
-        entity.draw(ctx);
+    // 3. Draw fireballs
+    entities.filter(entity => entity instanceof Fireball).forEach(entity => {
+      entity.draw(ctx);
+    });
+
+    // 4. Draw Goombas, Koopa, and Shells within bounds
+    entities.forEach(entity => {
+      if ((entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell) &&
+        entity.x + entity.width >= leftBound && entity.x <= rightBound) {
+        entity.start = true;
+        entity.draw(ctx, entity.flipY);
+        DRAW_HITBOX ? entity.collision.drawDebug(ctx, entity) : null;
       }
-    }
+    });
 
-    for (const player of players) {
+    // 5. Draw players (only if visible and not invincible)
+    players.forEach(player => {
+      if (player.isInvincible && !player.visibilityToggle) return;
       player.draw(ctx);
-    }
+      DRAW_HITBOX ? player.collision.drawDebug(ctx, player) : null;
+    });
 
+    // Restore context to its original state
     ctx.restore();
   };
 

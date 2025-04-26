@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import DrawLevel from '../utils/drawLevel.jsx';
-import stage from '../assets/levels/test.json';
+import stage from '../assets/levels/level_1-1.json';
 import useCamera from "../utils/camera.jsx";
 import Block from '../Blocks/block.jsx';
 import { imageById } from '../Blocks/spriteMap.jsx';
@@ -13,8 +13,18 @@ import { FRAME_DURATION } from "../constants/constants.jsx";
 import createGameLoop from "../utils/gameLoop.jsx";
 import Fireball from "../entities/fireball.jsx";
 import Goomba from "../entities/goomba.jsx";
+import Koopa from "../entities/koopa.jsx";
+import Shell from "../entities/shell.jsx";
+import PipeTop from "../Blocks/pipeTop.jsx";
+import PiranhaPlant from "../entities/piranhaPlant.jsx";
+import Platform from "../Blocks/platform.jsx";
 
-export let blocks = []; // Global blocks
+export let blocks = [];
+export let mapType = [];
+export let mapHeight = null;
+export let mapWidth = null;
+
+export let playerX = null;
 
 const preloadedImagesPromise = (function () {
   const loadedImages = {};
@@ -62,6 +72,7 @@ const Game = () => {
     preloadedImagesPromise.then((sprites) => {
       setLoadedSprites(sprites);
       setLevelBackground(stage.backgroundColor);
+      mapType = stage.mapType || 'overworld';
     });
 
     return () => {
@@ -71,7 +82,10 @@ const Game = () => {
 
   useEffect(() => {
     if (loadedSprites) {
-      blocks = generateBlocksFromMap(stage.map, loadedSprites); // Set global blocks
+      blocks = generateBlocksFromMap(stage.map, loadedSprites);
+
+      mapWidth = stage.map[0].length * TILE_SIZE;
+      mapHeight = stage.map.length * TILE_SIZE;
     }
 
     generatePlayers();
@@ -117,10 +131,20 @@ const Game = () => {
       row.map((tileId, colIndex) => {
         if (tileId == null) return null;
 
-        const sprite = loadedSprites[tileId];
-        if (!sprite?.image) return null;
+        let sprite;
+        let blockContent = null;
+        let blockContentQuantity = 1;
+        if (tileId.id) {
+          sprite = loadedSprites[tileId.id];
+          blockContent = tileId.content;
+          blockContentQuantity = tileId.content.quantity;
+        } else {
+          sprite = loadedSprites[tileId];
+        }
 
-        if (tileId === "mystery") {
+        if (sprite === undefined || sprite === null) return null;
+
+        if (tileId.id === "mystery") {
           return new MysteryBlock(
             colIndex * TILE_SIZE,
             rowIndex * TILE_SIZE,
@@ -128,7 +152,38 @@ const Game = () => {
             sprite.h || TILE_SIZE,
             sprite.image,
             collisionRef.current,
-            sprite.solid || false
+            sprite.solid || false,
+            blockContent,
+          );
+        } else if (tileId.id === "platform") {
+          return new Platform(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            sprite.w || TILE_SIZE,
+            sprite.h || TILE_SIZE,
+            sprite.image,
+            collisionRef.current,
+            sprite.solid || false,
+            blockContent,
+          );
+        } else if (tileId.id === "pipeTop") {
+          const piranhaPlant = new PiranhaPlant(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            collisionRef.current,
+          );
+
+          addItemCallback(piranhaPlant);
+
+          return new PipeTop(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            sprite.w || TILE_SIZE,
+            sprite.h || TILE_SIZE,
+            sprite.image,
+            collisionRef.current,
+            sprite.solid || false,
+            blockContent
           );
         } else if (tileId === "goomba") {
           const goomba = new Goomba(
@@ -138,6 +193,16 @@ const Game = () => {
           );
 
           addItemCallback(goomba);
+        } else if (tileId === "koopa" || tileId === "koopaRed") {
+          const koopa = new Koopa(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            collisionRef.current,
+            addItemCallback,
+            tileId === "koopaRed",
+          );
+
+          addItemCallback(koopa);
         } else {
           return new Block(
             colIndex * TILE_SIZE,
@@ -146,7 +211,10 @@ const Game = () => {
             sprite.h || TILE_SIZE,
             tileId,
             sprite.image,
-            sprite.solid || false
+            sprite.solid || false,
+            blockContent,
+            blockContentQuantity,
+            collisionRef.current,
           );
         }
       }).filter(Boolean) // Remove nulls
@@ -154,38 +222,32 @@ const Game = () => {
   }, []);
 
   useEffect(() => {
-    const gameState = {
-      lastUpdateTime: 0,
-      accumulator: 0
-    };
-
     const gameLoop = createGameLoop({
-      targetFps: 144,
-      onUpdate: ({ delta, gameTime, fps, ups }) => {
-        // Occasionally log performance stats
-        if (Math.random() < 0.01) {
-          console.log(`Update rate: ${ups} ups, Render rate: ${fps} fps`);
-        }
-
+      maxStep: 0.05,
+      onUpdate: ({ delta, gameDelta, gameTime }) => {
+        const fps = Math.round(1 / delta);
         if (blocks.length > 0) {
           if (entities) {
             for (let i = entities.length - 1; i >= 0; i--) {
               const entity = entities[i];
+              // Check if it's a Fireball and needs full update
               if (entity instanceof Fireball) {
                 entity.update(delta);
-              } else if (entity instanceof Goomba) {
-                entity.update(delta);
+              } else if (entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell || entity instanceof PiranhaPlant) {
+                entity.update(delta, entities);
                 entity.animate(delta);
               } else if (entity.animate) {
                 entity.animate(delta);
               }
 
+              // Remove collected or marked for removal entities
               if (entity.isCollected || entity.remove) {
                 setEntities(prev => prev.filter((_, index) => index !== i));
               }
             }
           }
 
+          // Remove broken blocks
           for (let i = entities.length - 1; i >= 0; i--) {
             if (entities[i].isCollected) {
               entities.splice(i, 1);
@@ -201,27 +263,24 @@ const Game = () => {
             }
           });
 
+          // Remove broken blocks
           for (let i = blocks.length - 1; i >= 0; i--) {
             if (blocks[i].broken && (!blocks[i].fragments || blocks[i].fragments.length === 0)) {
               blocks.splice(i, 1);
             }
           }
 
-          // Update players
           if (players) {
             players.forEach((player) => {
               player.update?.(delta, entities);
               player.animate?.(delta);
+
+              playerX = player.x;
             });
           }
         }
 
         camera.updateCamera(delta);
-
-        gameState.lastUpdateTime = gameTime;
-      },
-
-      onRender: ({ delta, gameTime }) => {
         drawLevelRef.current?.renderFrame(delta);
       }
     });
@@ -241,7 +300,7 @@ const Game = () => {
   return (
     <div
       ref={gameRef}
-      className="w-screen h-screen flex items-start justify-start overflow-hidden"
+      className="w-screen h-screen flex items-center justify-center overflow-hidden"
       style={{ backgroundColor: 'black' }}
     >
       <DrawLevel

@@ -1,12 +1,18 @@
 import {useEffect, useRef, useState} from "react";
+import {mapWidth, playerX} from '../screens/game.jsx';
+import {TILE_SIZE} from "../constants/constants.jsx";
 
 const useCamera = () => {
   const [cameraX, setCameraX] = useState(0);
   const targetX = useRef(0);
   const keys = useRef({ left: false, right: false });
 
-  const CAMERA_SPEED = 512;
+  const CAMERA_SPEED = 1024;
   const LERP_FACTOR = 0.05;
+
+  const OFFSET = TILE_SIZE * 2;
+
+  const screenWidth = window.innerWidth;
 
   const handleKey = (down) => (e) => {
     if (e.key === 'ArrowLeft') keys.current.left = down;
@@ -24,10 +30,16 @@ const useCamera = () => {
   }, []);
 
   const updateCamera = (dt) => {
-    if (keys.current.left) targetX.current = Math.max(targetX.current - CAMERA_SPEED * dt, 0);
-    if (keys.current.right) targetX.current += CAMERA_SPEED * dt;
+    let currentCameraX = 0;
 
-    setCameraX(prev => lerp(prev, targetX.current, LERP_FACTOR));
+    if ((playerX - OFFSET) >= TILE_SIZE * 10) {
+      currentCameraX = (playerX - OFFSET) - TILE_SIZE * 10;
+    }
+
+    // Clamp camera to right edge of the map
+    currentCameraX = Math.min(currentCameraX, mapWidth);
+
+    setCameraX(prev => lerp(prev, currentCameraX, LERP_FACTOR));
   };
 
   const lerp = (current, target, factor) => {
