@@ -24,13 +24,10 @@ export default class Item {
     this.width = TILE_SIZE;
     this.height = TILE_SIZE;
     this.isCollected = false;
-
-    this.itemAnimations = this.loadItemAnimations();
     this.itemFrameIndex = 0;
     this.itemFrameTime = 0;
-    this.itemFrameDuration = 0.2;
-
-    this.grounded = false;
+    this.itemFrameDuration = 0.0;
+    this.itemAnimations = this.loadItemAnimations();
   }
 
   loadItemAnimations() {
@@ -62,6 +59,7 @@ export default class Item {
     if (this.itemType === 'flower') return flowerAnimations;
     if (this.itemType === 'coin') return coinAnimations;
     if (this.itemType === 'starman') return starmanAnimations;
+
     return mushroomAnimation;
   }
 
@@ -103,6 +101,7 @@ export class Flower extends Item {
     this.dy = -25;
     this.isMoving = true;
     this.blockY = y;
+    this.itemFrameDuration = 0.3;
   }
 
   animate(deltaTime) {
@@ -162,16 +161,16 @@ export class Coin extends Item {
     super(x, y, 'coin');
 
     // Physics properties
-    this.initialVelocity = -350; // Strong upward initial velocity
-    this.gravity = 800;          // Gravity to pull it back down
+    this.initialVelocity = -200; // Strong upward initial velocity
+    this.gravity = 300;          // Gravity to pull it back down
     this.velocity = this.initialVelocity;
 
     // Animation timing
     this.lifeTime = 0;
-    this.maxLifeTime = 0.9;      // Coin will exist for 0.9 seconds
+    this.maxLifeTime = 1.4;      // Coin will exist for 0.9 seconds
 
     // Much faster coin spinning animation - lower value means faster animation
-    this.itemFrameDuration = 0.2;
+    this.itemFrameDuration = 0.1;
   }
 
   animate(deltaTime) {

@@ -1,14 +1,16 @@
 import Entity from './Entity';
 
-import KoopaShell from '../assets/Sprites/Koopa_Shell.png';
+import KoopaShell from '../assets/Sprites/Koopa_Shell_Green.png';
+import KoopaShellUnderground from '../assets/Sprites/Koopa_Shell_underground.png';
+import {mapType} from "../screens/game.jsx";
 
-export const ShellFrames  = [KoopaShell];
+export let ShellFrames  = [KoopaShell];
 
 export default class Shell extends Entity {
   constructor(x, y, collision) {
     super(x, y, 32, 32);
 
-    this.speed = 500;
+    this.speed = 450;
     this.collision = collision;
     this.vx = 0;
     this.vy = 0;
@@ -22,12 +24,16 @@ export default class Shell extends Entity {
 
     this.currentAnimation = 'shell';
     this.animations = {};
-    this.preloadAnimations();
 
     this.remove = false;
 
     this.killedByFireball = false;
     this.flipY = false;
+
+    if (mapType === 'underground') {
+      ShellFrames = [KoopaShellUnderground];
+    }
+    this.preloadAnimations();
   }
 
   preloadAnimations() {
@@ -92,5 +98,9 @@ export default class Shell extends Entity {
       this.y < other.y + other.height &&
       this.y + this.height > other.y
     );
+  }
+
+  dead() {
+    this.remove = true;
   }
 }

@@ -1,5 +1,4 @@
 {
-  "mapType": "overworld",
   "backgroundColor": "#5c94fc",
   "map": [
     [
@@ -1950,9 +1949,24 @@
       null,
       null,
       null,
-      null,
-      null,
-      null,
+      {
+        "id": "mystery",
+        "content": {
+          "type": "auto"
+        }
+      },
+      {
+        "id": "mystery",
+        "content": {
+          "type": "star"
+        }
+      },
+      {
+        "id": "mystery",
+        "content": {
+          "type": "auto"
+        }
+      },
       null,
       null,
       null,
@@ -2054,7 +2068,13 @@
       null,
       null,
       null,
-      "brick",
+      {
+        "id": "brick",
+        "content": {
+          "type": "coin",
+          "quantity": 6
+        }
+      },
       null,
       null,
       null,
@@ -2062,7 +2082,7 @@
       null,
       "brick",
       {
-        "id": "mystery",
+        "id": "brick",
         "content": {
           "type": "star"
         }
@@ -2432,7 +2452,7 @@
       null,
       null,
       null,
-      null,
+      "koopa",
       null,
       null,
       null,

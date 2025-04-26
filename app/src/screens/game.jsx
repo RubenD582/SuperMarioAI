@@ -15,9 +15,16 @@ import Fireball from "../entities/fireball.jsx";
 import Goomba from "../entities/goomba.jsx";
 import Koopa from "../entities/koopa.jsx";
 import Shell from "../entities/shell.jsx";
+import PipeTop from "../Blocks/pipeTop.jsx";
+import PiranhaPlant from "../entities/piranhaPlant.jsx";
+import Platform from "../Blocks/platform.jsx";
 
 export let blocks = [];
 export let mapType = [];
+export let mapHeight = null;
+export let mapWidth = null;
+
+export let playerX = null;
 
 const preloadedImagesPromise = (function () {
   const loadedImages = {};
@@ -57,10 +64,6 @@ const Game = () => {
     setEntities((prevItems) => [...prevItems, item]);
   };
 
-  useEffect(() => {
-    console.log(entities);
-  }, [entities]);
-
   const collisionRef = useRef(new Collision(addItemCallback));
 
   useEffect(() => {
@@ -79,7 +82,10 @@ const Game = () => {
 
   useEffect(() => {
     if (loadedSprites) {
-      blocks = generateBlocksFromMap(stage.map, loadedSprites); // Set global blocks
+      blocks = generateBlocksFromMap(stage.map, loadedSprites);
+
+      mapWidth = stage.map[0].length * TILE_SIZE;
+      mapHeight = stage.map.length * TILE_SIZE;
     }
 
     generatePlayers();
@@ -125,18 +131,20 @@ const Game = () => {
       row.map((tileId, colIndex) => {
         if (tileId == null) return null;
 
-        console.log(tileId);
-
         let sprite;
+        let blockContent = null;
+        let blockContentQuantity = 1;
         if (tileId.id) {
           sprite = loadedSprites[tileId.id];
+          blockContent = tileId.content;
+          blockContentQuantity = tileId.content.quantity;
         } else {
           sprite = loadedSprites[tileId];
         }
 
         if (sprite === undefined || sprite === null) return null;
 
-        if (tileId.id && tileId.id === "mystery") {
+        if (tileId.id === "mystery") {
           return new MysteryBlock(
             colIndex * TILE_SIZE,
             rowIndex * TILE_SIZE,
@@ -145,7 +153,37 @@ const Game = () => {
             sprite.image,
             collisionRef.current,
             sprite.solid || false,
-            tileId.content
+            blockContent,
+          );
+        } else if (tileId.id === "platform") {
+          return new Platform(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            sprite.w || TILE_SIZE,
+            sprite.h || TILE_SIZE,
+            sprite.image,
+            collisionRef.current,
+            sprite.solid || false,
+            blockContent,
+          );
+        } else if (tileId.id === "pipeTop") {
+          const piranhaPlant = new PiranhaPlant(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            collisionRef.current,
+          );
+
+          addItemCallback(piranhaPlant);
+
+          return new PipeTop(
+            colIndex * TILE_SIZE,
+            rowIndex * TILE_SIZE,
+            sprite.w || TILE_SIZE,
+            sprite.h || TILE_SIZE,
+            sprite.image,
+            collisionRef.current,
+            sprite.solid || false,
+            blockContent
           );
         } else if (tileId === "goomba") {
           const goomba = new Goomba(
@@ -155,12 +193,13 @@ const Game = () => {
           );
 
           addItemCallback(goomba);
-        } else if (tileId === "koopa") {
+        } else if (tileId === "koopa" || tileId === "koopaRed") {
           const koopa = new Koopa(
             colIndex * TILE_SIZE,
             rowIndex * TILE_SIZE,
             collisionRef.current,
-            addItemCallback
+            addItemCallback,
+            tileId === "koopaRed",
           );
 
           addItemCallback(koopa);
@@ -172,7 +211,10 @@ const Game = () => {
             sprite.h || TILE_SIZE,
             tileId,
             sprite.image,
-            sprite.solid || false
+            sprite.solid || false,
+            blockContent,
+            blockContentQuantity,
+            collisionRef.current,
           );
         }
       }).filter(Boolean) // Remove nulls
@@ -191,7 +233,7 @@ const Game = () => {
               // Check if it's a Fireball and needs full update
               if (entity instanceof Fireball) {
                 entity.update(delta);
-              } else if (entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell) {
+              } else if (entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell || entity instanceof PiranhaPlant) {
                 entity.update(delta, entities);
                 entity.animate(delta);
               } else if (entity.animate) {
@@ -232,6 +274,8 @@ const Game = () => {
             players.forEach((player) => {
               player.update?.(delta, entities);
               player.animate?.(delta);
+
+              playerX = player.x;
             });
           }
         }
@@ -256,7 +300,7 @@ const Game = () => {
   return (
     <div
       ref={gameRef}
-      className="w-screen h-screen flex items-start justify-start overflow-hidden"
+      className="w-screen h-screen flex items-center justify-center overflow-hidden"
       style={{ backgroundColor: 'black' }}
     >
       <DrawLevel

@@ -22,7 +22,8 @@ import castle from '../assets/Sprites/Castle.png';
 import flagPole from '../assets/Sprites/FlagPole.png';
 import flag from '../assets/Sprites/Flag.png';
 import goomba from '../assets/Sprites/Goomba_Walk1.png';
-import koopa from '../assets/Sprites/Koopa_Walk1.png';
+import koopa from '../assets/Sprites/Koopa_Walk_Green1.png';
+import koopaRed from '../assets/Sprites/Koopa_Walk_Red1.png';
 
 export const imageList = [
   { id: 'ground', url: ground, w: 32, h: 32, solid: true },
@@ -49,7 +50,8 @@ export const imageList = [
   { id: 'flagPole', url: flagPole, w: 32, h: 320, solid: false },
   { id: 'flag', url: flag, w: 64, h: 32, solid: false },
   { id: 'goomba', url: goomba, w: 32, h: 32, solid: false },
-  { id: 'koopa', url: koopa, w: 32, h: 32, solid: false },
+  { id: 'koopa', url: koopa, w: 32, h: 64, solid: false },
+  { id: 'koopaRed', url: koopaRed, w: 32, h: 64, solid: false },
 ];
 
 // Create a lookup object by ID for easier access

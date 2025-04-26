@@ -4,10 +4,16 @@ import Shell from './Shell';
 import Goomba1 from '../assets/Sprites/Goomba_Walk1.png';
 import Goomba2 from '../assets/Sprites/Goomba_Walk2.png';
 import GoombaFlat from '../assets/Sprites/Goomba_Flat.png';
-import Fireball from "./fireball.jsx";
 
-export const GoombaFrames  = [Goomba1, Goomba2];
-export const GoombaFlatFrames = [GoombaFlat];
+import GoombaUnderground1 from '../assets/Sprites/Goomba_Walk_underground1.png';
+import GoombaUnderground2 from '../assets/Sprites/Goomba_Walk_underground2.png';
+import GoombaFlatUnderground from '../assets/Sprites/Goomba_Flat_underground.png';
+
+import Fireball from "./fireball.jsx";
+import {mapType} from "../screens/game.jsx";
+
+export let GoombaFrames  = [Goomba1, Goomba2];
+export let GoombaFlatFrames = [GoombaFlat];
 
 export default class Goomba extends Entity {
   constructor(x, y, collision) {
@@ -28,13 +34,18 @@ export default class Goomba extends Entity {
 
     this.currentAnimation = 'walk';
     this.animations = {};
-    this.preloadAnimations();
 
     this.remove = false;
     this.deathTimer = 0;
 
     this.killedByFireball = false;
     this.flipY = false;
+
+    if (mapType === 'underground') {
+      GoombaFrames  = [GoombaUnderground1, GoombaUnderground2];
+      GoombaFlatFrames = [GoombaFlatUnderground];
+    }
+    this.preloadAnimations();
   }
 
   preloadAnimations() {
@@ -64,6 +75,16 @@ export default class Goomba extends Entity {
   update(delta, entities) {
     if (this.start) {
       if (!this.isDead) {
+        // Initialize collision cooldown if it doesn't exist
+        if (this.collisionCooldown === undefined) {
+          this.collisionCooldown = 0;
+        }
+
+        // Decrease cooldown timer if it's active
+        if (this.collisionCooldown > 0) {
+          this.collisionCooldown -= delta;
+        }
+
         this.vy += this.gravity * delta;
         this.y += this.vy * delta;
         this.x += this.vx * delta;
@@ -72,33 +93,70 @@ export default class Goomba extends Entity {
         this.collision.checkVerticalCollisions(this);
 
         entities.forEach(entity => {
-          if (this.checkCollision(entity)) {
-            if (entity instanceof Fireball) {
+          // Skip self-collision
+          if (entity === this) return;
+
+          if (this.checkCollision(entity) && this.collisionCooldown <= 0) {
+            // Set cooldown to prevent immediate re-collision
+            this.collisionCooldown = 0.5; // Half a second cooldown
+
+            // Determine which side of the collision occurred to push appropriately
+            const overlapX = Math.min(
+              this.x + this.width - entity.x,
+              entity.x + entity.width - this.x
+            );
+
+            // Push away from the other entity
+            if (this.x < entity.x) {
+              // This entity is on the left
+              this.x -= overlapX / 2;
+              // Ensure we're not pushing it into a wall
+              this.collision.checkHorizontalCollisions(this);
+            } else {
+              // This entity is on the right
+              this.x += overlapX / 2;
+              // Ensure we're not pushing it into a wall
+              this.collision.checkHorizontalCollisions(this);
+            }
+
+            // Reverse direction
+            this.vx = -this.vx;
+
+            // Handle special collision cases
+            if (entity instanceof Fireball || entity instanceof Shell) {
               entity.explode = true;
               this.dead(entity);
-            } else if (entity instanceof Shell) {
+            } else if (entity instanceof Shell && !entity.hasOwnProperty('explode')) {
               this.dead(entity);
             }
           }
         });
 
+        if (this.vx < 0) this.facing = "right";
+        if (this.vx > 0) this.facing = "left";
       } else {
+        // If the Goomba is dead, check the timer
         if (this.killedByFireball) {
-          // Let it fall freely without collisions
           this.y += this.vy * delta;
           this.vy += this.gravity * delta;
 
-          if (this.y > 1000) this.remove = true;
+          // If the Goomba falls too far, remove it
+          if (this.y > 1000) {
+            this.remove = true;
+          }
+        }
 
-        } else {
-          this.deathTimer += delta * 1000;
-          if (this.deathTimer >= 250) {
+        if (!this.killedByFireball) {
+          if (this.deathTimer < 0.1) {
+            this.deathTimer += delta;
+          } else {
             this.remove = true;
           }
         }
       }
     }
   }
+
 
   checkCollision(other) {
     return (

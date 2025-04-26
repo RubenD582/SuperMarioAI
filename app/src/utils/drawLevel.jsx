@@ -5,6 +5,8 @@ import Goomba from "../entities/goomba.jsx";
 import Item from "../Blocks/item.jsx";
 import Koopa from "../entities/koopa.jsx";
 import Shell from "../entities/shell.jsx";
+import PiranhaPlant from "../entities/piranhaPlant.jsx";
+import {DRAW_HITBOX, TILE_SIZE} from "../constants/constants.jsx";
 
 const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundColor = '#000000', cameraX = 0, style = {} }, ref) => {
   const canvasRef = useRef(null);
@@ -29,7 +31,7 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
       const canvas = canvasRef.current;
       if (!canvas || !blocks.length) return;
 
-      const screenWidth = window.innerWidth;
+      const screenWidth = TILE_SIZE * 26;// window.innerWidth;
 
       // 🧠 Calculate max Y based on the highest block's Y position + its height
       const canvasHeight = Math.max(...blocks.map(block => block.y + block.height), 0);
@@ -69,7 +71,7 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     if (!ctx || !blocks.length) return;
 
     // Calculate visible area and bounds
-    const screenWidth = window.innerWidth;
+    const screenWidth = TILE_SIZE * 26; // window.innerWidth;
     const screenHeight = window.innerHeight;
     const leftBound = cameraXRef.current - 50;
     const rightBound = cameraXRef.current + screenWidth + 50;
@@ -78,6 +80,7 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.imageSmoothingEnabled = false;
 
+    // Fill the background
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
 
@@ -85,9 +88,10 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     ctx.save();
     ctx.translate(-cameraXRef.current, 0);
 
+    // 1. Draw items and plants
     entities.forEach(entity => {
-      if (entity instanceof Item) {
-        entity.draw(ctx);
+      if (entity instanceof Item || entity instanceof PiranhaPlant) {
+        entity.draw(ctx, entity instanceof PiranhaPlant ? entity.flipY : undefined);
       }
     });
 
@@ -101,21 +105,18 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
       }
     });
 
-    // 3. Draw fireballs on top of blocks
-    entities.forEach(entity => {
-      if (entity instanceof Fireball) {
-        entity.draw(ctx);
-      }
+    // 3. Draw fireballs
+    entities.filter(entity => entity instanceof Fireball).forEach(entity => {
+      entity.draw(ctx);
     });
 
-    // 4. Draw Goombas
+    // 4. Draw Goombas, Koopa, and Shells within bounds
     entities.forEach(entity => {
-      if (entity.x + entity.width >= leftBound && entity.x <= rightBound) {
+      if ((entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell) &&
+        entity.x + entity.width >= leftBound && entity.x <= rightBound) {
         entity.start = true;
-      }
-
-      if (entity instanceof Goomba || entity instanceof Koopa || entity instanceof Shell) {
         entity.draw(ctx, entity.flipY);
+        DRAW_HITBOX ? entity.collision.drawDebug(ctx, entity) : null;
       }
     });
 
@@ -123,6 +124,7 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     players.forEach(player => {
       if (player.isInvincible && !player.visibilityToggle) return;
       player.draw(ctx);
+      DRAW_HITBOX ? player.collision.drawDebug(ctx, player) : null;
     });
 
     // Restore context to its original state

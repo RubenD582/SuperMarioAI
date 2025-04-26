@@ -1,31 +1,45 @@
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { imageList } from '../Blocks/spriteMap.jsx';
 
-// Create a lookup object for quick access by ID
+// Create lookup object for quick tile access by ID
 const tileById = imageList.reduce((acc, tile) => {
   acc[tile.id] = tile;
   return acc;
 }, {});
 
-const mysteryOptions = [
-  { label: 'Auto: Mushroom or Fire Flower', value: 'auto' },
-  { label: 'Coin', value: 'coin' },
-  { label: '1-Up', value: '1up' },
-  { label: 'Star', value: 'star' },
-  { label: 'Custom Tile...', value: 'custom' },
-];
-
-const brickOptions = [
-  { label: 'Coin', value: 'coin' },
-  { label: 'Star', value: 'star' },
-];
-
 const TILE_SIZE = 32;
 const GRID_WIDTH = 192;
 const GRID_HEIGHT = 16;
 
-// Memoized Tile component to prevent unnecessary re-renders
-// Update the Tile component to handle when tileId is an object
+// Item options for different block types
+const BLOCK_OPTIONS = {
+  mystery: [
+    { label: 'Auto: Mushroom or Fire Flower', value: 'auto' },
+    { label: 'Coin', value: 'coin' },
+    { label: '1-Up', value: '1up' },
+    { label: 'Star', value: 'star' },
+  ],
+  brick: [
+    { label: 'Auto: Mushroom or Fire Flower', value: 'auto' },
+    { label: 'Coin', value: 'coin' },
+    { label: 'Star', value: 'star' },
+    { label: 'Flower', value: 'flower' },
+    { label: 'Mushroom', value: 'mushroom' },
+    { label: '1-Up', value: '1up' },
+  ],
+  pipe: [
+    { label: 'Plant', value: 'plant' },
+    { label: 'Level', value: 'level' },
+  ],
+  platform: [
+    { label: 'Up', value: 'up' },
+    { label: 'Down', value: 'down' },
+    { label: 'Left', value: 'left' },
+    { label: 'Right', value: 'right' },
+  ]
+};
+
+// Memoized Tile component
 const Tile = memo(({
                      rowIndex,
                      colIndex,
@@ -39,24 +53,14 @@ const Tile = memo(({
   // Handle both string-based and object-based tile IDs
   const getTileInfo = (tileId) => {
     if (!tileId) return null;
-
-    // If tileId is an object with an id property, use that id to look up the tile
-    if (typeof tileId === 'object' && tileId.id) {
-      return tileById[tileId.id];
-    }
-
-    // Otherwise, use tileId directly as a string
-    return tileById[tileId];
+    return typeof tileId === 'object' && tileId.id ? tileById[tileId.id] : tileById[tileId];
   };
 
   const tile = getTileInfo(tileId);
   const isActive = !!tile;
 
-  // Function to handle click on tile (for selection)
   const handleClick = (e) => {
-    // Only process left clicks
     if (e.button === 0) {
-      // Prevent propagation to avoid triggering other click events
       e.stopPropagation();
       onTileClick(rowIndex, colIndex, tileId);
     }
@@ -79,7 +83,7 @@ const Tile = memo(({
         margin: 0,
         boxSizing: 'border-box',
         lineHeight: 0,
-        gridColumn: colIndex + 1, // Add explicit positioning
+        gridColumn: colIndex + 1,
         gridRow: rowIndex + 1,
       }}
     >
@@ -110,108 +114,220 @@ const Tile = memo(({
 });
 
 // Memoized TileSelector component
-const TileSelector = memo(({ selectedTileId, setSelectedTileId, setEraseMode, setSelectedBlockPosition }) => {
-  return (
-    <div
-      className="grid overflow-y-auto p-2 border border-white/50 max-h-[50%]"
-      style={{
-        gridTemplateColumns: 'repeat(auto-fill, 16px)',
-        gridAutoRows: '16px',
-        gap: '2px',
-      }}
-    >
-      {imageList.map((imageData) => {
-        const colSpan = imageData.w / 16;
-        const rowSpan = imageData.h / 16;
+const TileSelector = memo(({ selectedTileId, setSelectedTileId, setEraseMode, setSelectedBlockPosition }) => (
+  <div
+    className="grid overflow-y-auto p-2 border border-white/50 max-h-[50%]"
+    style={{
+      gridTemplateColumns: 'repeat(auto-fill, 16px)',
+      gridAutoRows: '16px',
+      gap: '2px',
+    }}
+  >
+    {imageList.map((imageData) => (
+      <div
+        key={imageData.id}
+        className={`relative cursor-pointer border border-white/10${
+          selectedTileId === imageData.id ? ' outline outline-2 outline-yellow-400' : ''
+        }`}
+        style={{
+          gridColumnEnd: `span ${imageData.w / 16}`,
+          gridRowEnd: `span ${imageData.h / 16}`,
+        }}
+        onClick={() => {
+          setSelectedTileId(imageData.id);
+          setEraseMode(false);
+          setSelectedBlockPosition(null);
 
-        return (
-          <div
-            key={imageData.id}
-            className={`relative cursor-pointer border border-white/10${
-              selectedTileId === imageData.id ? ' outline outline-2 outline-yellow-400' : ''
-            }`}
-            style={{
-              gridColumnEnd: `span ${colSpan}`,
-              gridRowEnd: `span ${rowSpan}`,
-            }}
-            onClick={() => {
-              setSelectedTileId(imageData.id);
-              setEraseMode(false);
-              setSelectedBlockPosition(null); // Clear selected block when choosing a new tile
-            }}
-          >
-            <img
-              src={imageData.url}
-              alt={`tile-${imageData.id}`}
-              className="pointer-events-none w-full h-full object-cover"
-              title={imageData.id}
-              style={{
-                display: 'block',
-                width: `${imageData.w}px`,
-                height: `${imageData.h}px`,
-                imageRendering: 'pixelated',
-                margin: 0,
-                padding: 0,
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-        );
-      })}
+          console.log(imageData);
+        }}
+      >
+        <img
+          src={imageData.url}
+          alt={`tile-${imageData.id}`}
+          className="pointer-events-none w-full h-full object-cover"
+          title={imageData.id}
+          style={{
+            display: 'block',
+            width: `${imageData.w}px`,
+            height: `${imageData.h}px`,
+            imageRendering: 'pixelated',
+            margin: 0,
+            padding: 0,
+            boxSizing: 'border-box',
+          }}
+        />
+      </div>
+    ))}
+  </div>
+));
+
+// Block Editor component
+const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
+  if (!selectedBlock) return null;
+
+  const getBlockType = () => {
+    console.log(selectedBlock);
+    if (typeof selectedBlock === 'string') {
+      if (selectedBlock === 'mystery') return 'mystery';
+      if (selectedBlock === 'brick') return 'brick';
+      if (selectedBlock === 'undergroundBrick') return 'undergroundBrick';
+      if (selectedBlock === 'pipeTop') return 'pipe';
+      if (selectedBlock === 'platform') return 'platform';
+      return null;
+    }
+
+    if (typeof selectedBlock === 'object') {
+      if (selectedBlock.id === 'mystery') return 'mystery';
+      if (selectedBlock.id === 'brick') return 'brick';
+      if (selectedBlock.id === 'undergroundBrick') return 'undergroundBrick';
+      if (selectedBlock.id === 'pipeTop') return 'pipe';
+      if (selectedBlock.id === 'platform') return 'platform';
+    }
+
+    return null;
+  };
+
+  const blockType = getBlockType();
+  console.log(`blockType: ${blockType}`);
+  if (!blockType) return null;
+
+  const getContentType = () => {
+    return typeof selectedBlock === 'object' && selectedBlock.content ? selectedBlock.content.type : 'none';
+  };
+
+  const contentType = getContentType();
+  const options = BLOCK_OPTIONS[blockType];
+  let title = '';
+  switch (blockType) {
+    case 'mystery':
+      title = 'Mystery Block Settings';
+      break;
+    case 'brick':
+      title = 'Brick Block Settings';
+      break;
+    case 'pipeTop':
+      title = 'Pipe Settings';
+      break;
+    case 'platform':
+      title = 'Platform Direction';
+      break;
+    default:
+      title = 'Block Settings';
+      break;
+  }
+
+  return (
+    <div className="p-2 bg-neutral-800 text-sm rounded shadow">
+      <h3 className="font-bold mb-2">{title}</h3>
+      <select
+        className="w-full text-black mb-2 p-1 rounded"
+        value={contentType}
+        onChange={(e) => updateBlockContent(blockType, e.target.value)}
+      >
+        <option value="none">Empty</option>
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      {blockType === 'brick' && contentType === 'coin' && (
+        <div className="mt-2">
+          <label className="block text-sm mb-1">Coin Count:</label>
+          <input
+            type="number"
+            min="1"
+            max="10"
+            className="w-full text-black p-1 rounded"
+            value={selectedBlock.content?.quantity || 1}
+            onChange={(e) => updateBlockContent('brick', 'coin', parseInt(e.target.value, 10))}
+          />
+        </div>
+      )}
     </div>
   );
-});
+};
 
+// Main LevelBuilder Component
 const LevelBuilder = ({ onBack }) => {
   const [selectedBlockPosition, setSelectedBlockPosition] = useState(null);
   const [selectedTileId, setSelectedTileId] = useState('ground');
-  const [levelData, setLevelData] = useState(
-    Array.from({ length: GRID_HEIGHT }, () =>
-      Array(GRID_WIDTH).fill(null)
-    )
-  );
+  const [levelData, setLevelData] = useState(Array.from({ length: GRID_HEIGHT }, () => Array(GRID_WIDTH).fill(null)));
   const [scrollPosition, setScrollPosition] = useState(0);
-  const gridRef = useRef(null);
-  const containerRef = useRef(null);
   const [eraseMode, setEraseMode] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [showCoordinates, setShowCoordinates] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState(16);
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#000000');
-
   const [middleMouseDragging, setMiddleMouseDragging] = useState(false);
   const [rulerStart, setRulerStart] = useState(null);
   const [rulerEnd, setRulerEnd] = useState(null);
-
   const [gridWidth, setGridWidth] = useState(levelData[0].length);
   const [placementMode, setPlacementMode] = useState(false);
 
-  // Get the selected block based on position
-  const selectedBlock =
-    selectedBlockPosition &&
+  const gridRef = useRef(null);
+  const containerRef = useRef(null);
+  const scrollTimeoutRef = useRef(null);
+
+  // Get selected block based on position
+  const selectedBlock = selectedBlockPosition &&
     levelData[selectedBlockPosition.row] &&
     levelData[selectedBlockPosition.row][selectedBlockPosition.col];
 
-  // Use debouncing for scroll position updates
-  const scrollTimeoutRef = useRef(null);
+  // Update block content (mystery, brick, pipe)
+  const updateBlockContent = useCallback((blockType, contentType, customValue = null) => {
+    if (!selectedBlockPosition) return;
 
-  // Function to handle tile selection (separate from placement)
+    const { row, col } = selectedBlockPosition;
+
+    setLevelData(prevData => {
+      const newGrid = [...prevData];
+      const currentRow = [...newGrid[row]];
+      const currentTile = currentRow[col];
+      let updatedTile;
+
+      if (typeof currentTile === 'object') {
+        // Update existing object tile
+        updatedTile = {
+          ...currentTile,
+          content: contentType === 'none' ? null : {
+            type: contentType,
+            ...(contentType === 'custom' && customValue ? { customItemId: customValue } : {}),
+            ...(contentType === 'coin' && customValue ? { quantity: customValue } : {})
+          }
+        };
+      } else if (typeof currentTile === 'string') {
+        // Convert string tile to object with content
+        updatedTile = {
+          id: currentTile,
+          content: contentType === 'none' ? null : {
+            type: contentType,
+            ...(contentType === 'custom' && customValue ? { customItemId: customValue } : {}),
+            ...(contentType === 'coin' && customValue ? { quantity: customValue } : {})
+          }
+        };
+      }
+
+      if (updatedTile) {
+        currentRow[col] = updatedTile;
+        newGrid[row] = currentRow;
+      }
+
+      return newGrid;
+    });
+  }, [selectedBlockPosition]);
+
+  // Handle tile selection
   const handleTileClick = useCallback((row, col, tileId) => {
-    // Only select if we have a tile
     if (tileId) {
       setSelectedBlockPosition({ row, col });
-
-      // If it's a mystery block, ensure we're not in placement mode
-      if (typeof tileId === 'object' && tileId.id === 'mystery') {
-        setPlacementMode(false);
-      } else if (typeof tileId === 'string' && tileId === 'mystery') {
-        setPlacementMode(false);
-      }
+      setPlacementMode(false);
     }
   }, []);
 
-  // Memoize handlers with useCallback
+  // Update scroll position with debouncing
   const handleScrollPositionChange = useCallback((newPosition) => {
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
@@ -219,9 +335,10 @@ const LevelBuilder = ({ onBack }) => {
 
     scrollTimeoutRef.current = setTimeout(() => {
       setScrollPosition(Math.max(0, Math.min((gridWidth - visibleColumns) * TILE_SIZE, newPosition)));
-    }, 5); // Small delay for debouncing
+    }, 5);
   }, [gridWidth, visibleColumns]);
 
+  // Global event listeners
   useEffect(() => {
     const handleMouseUp = () => {
       setIsMouseDown(false);
@@ -229,18 +346,17 @@ const LevelBuilder = ({ onBack }) => {
       setRulerStart(null);
       setRulerEnd(null);
     };
-    window.addEventListener('mouseup', handleMouseUp);
 
     const updateViewportSize = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
-        const newVisibleColumns = Math.floor(containerWidth / TILE_SIZE);
-        setVisibleColumns(newVisibleColumns);
+        setVisibleColumns(Math.floor(containerWidth / TILE_SIZE));
       }
     };
 
-    updateViewportSize();
+    window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('resize', updateViewportSize);
+    updateViewportSize();
 
     return () => {
       window.removeEventListener('mouseup', handleMouseUp);
@@ -251,9 +367,10 @@ const LevelBuilder = ({ onBack }) => {
     };
   }, []);
 
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
-      const scrollAmount = TILE_SIZE * 4;
+      const scrollAmount = TILE_SIZE * 2;
       if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
         handleScrollPositionChange(scrollPosition - scrollAmount);
       }
@@ -266,6 +383,7 @@ const LevelBuilder = ({ onBack }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [scrollPosition, handleScrollPositionChange]);
 
+  // Mouse wheel handling
   useEffect(() => {
     const grid = gridRef.current;
     if (!grid) return;
@@ -279,18 +397,12 @@ const LevelBuilder = ({ onBack }) => {
     };
 
     grid.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      grid.removeEventListener('wheel', handleWheel);
-    };
+    return () => grid.removeEventListener('wheel', handleWheel);
   }, [scrollPosition, handleScrollPositionChange]);
 
+  // Level operations
   const exportLevel = useCallback(async () => {
-    const exportData = {
-      backgroundColor: backgroundColor,
-      map: levelData,
-    };
-
+    const exportData = { backgroundColor, map: levelData };
     const levelJSON = JSON.stringify(exportData, null, 2);
     const blob = new Blob([levelJSON], { type: 'application/json' });
 
@@ -312,186 +424,99 @@ const LevelBuilder = ({ onBack }) => {
     }
   }, [backgroundColor, levelData]);
 
-  const updateMysteryContent = (type, customId = null) => {
-    if (!selectedBlockPosition) return;
-
-    setLevelData(prev => {
-      const { row, col } = selectedBlockPosition;
-      const newGrid = [...prev];
-      const newRow = [...newGrid[row]];
-      const currentTile = newRow[col];
-
-      if (typeof currentTile === 'object' && currentTile.id === 'mystery') {
-        newRow[col] = {
-          ...currentTile,
-          content: {
-            type,
-            ...(type === 'custom' && customId ? { customItemId: customId } : {}),
-          },
-        };
-      } else if (currentTile === 'mystery') {
-        // Convert string mystery tile to object with content
-        newRow[col] = {
-          id: 'mystery',
-          content: {
-            type,
-            ...(type === 'custom' && customId ? { customItemId: customId } : {}),
-          },
-        };
-      }
-
-      newGrid[row] = newRow;
-      return newGrid;
-    });
-  };
-
-  const updateBrickContent = (contentType, quantity = null) => {
-    if (!selectedBlockPosition) return;
-
-    const { row, col } = selectedBlockPosition;
-
-    setLevelData(prevData => {
-      const newGrid = [...prevData];
-      const currentRow = [...newGrid[row]];
-      const currentTile = currentRow[col];
-
-      let updatedTile;
-
-      if (typeof currentTile === 'object' && currentTile.id === 'brick') {
-        // Existing brick tile
-        updatedTile = {
-          ...currentTile,
-          content: contentType === 'none' ? null : {
-            type: contentType,
-            ...(contentType === 'coin' ? { quantity: quantity ?? currentTile.content?.quantity ?? 1 } : {})
-          },
-        };
-      } else if (currentTile === 'brick') {
-        // New brick tile placement
-        updatedTile = {
-          id: 'brick',
-          content: contentType === 'none' ? null : {
-            type: contentType,
-            ...(contentType === 'coin' && quantity ? { quantity } : {})
-          },
-        };
-      }
-
-      if (updatedTile) {
-        currentRow[col] = updatedTile;
-        newGrid[row] = currentRow;
-      }
-
-      return newGrid;
-    });
-  };
-
-
   const importLevel = useCallback((event) => {
     const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const importedData = JSON.parse(e.target.result);
-          if (importedData && Array.isArray(importedData.map)) {
-            let processedMap;
+    if (!file) return;
 
-            const firstRow = importedData.map[0];
-            const firstNonEmptyValue = firstRow.find(value => value !== 0 && value !== null && value !== undefined);
-            const isOldFormat = typeof firstNonEmptyValue === 'number';
-
-            if (isOldFormat) {
-              const indexToIdMap = {};
-              imageList.forEach((img, index) => {
-                indexToIdMap[index + 1] = img.id;
-              });
-
-              processedMap = importedData.map.map(row =>
-                row.map(tileIndex => {
-                  if (tileIndex === 0) return null;
-                  return indexToIdMap[tileIndex] || null;
-                })
-              );
-
-              console.log('Converted old format map to ID-based format');
-            } else {
-              processedMap = importedData.map;
-            }
-
-            setGridWidth(processedMap[0].length);
-            setLevelData(processedMap);
-            setSelectedBlockPosition(null); // Clear selected block on import
-
-            if (importedData.backgroundColor) {
-              setBackgroundColor(importedData.backgroundColor);
-            }
-          } else {
-            alert('Invalid level format!');
-          }
-        } catch (error) {
-          alert('Error importing level: ' + error.message);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (!importedData || !Array.isArray(importedData.map)) {
+          alert('Invalid level format!');
+          return;
         }
-      };
-      reader.readAsText(file);
-    }
+
+        let processedMap;
+        const firstRow = importedData.map[0];
+        const firstNonEmptyValue = firstRow.find(value => value !== 0 && value !== null && value !== undefined);
+        const isOldFormat = typeof firstNonEmptyValue === 'number';
+
+        if (isOldFormat) {
+          const indexToIdMap = {};
+          imageList.forEach((img, index) => {
+            indexToIdMap[index + 1] = img.id;
+          });
+
+          processedMap = importedData.map.map(row =>
+            row.map(tileIndex => tileIndex === 0 ? null : indexToIdMap[tileIndex] || null)
+          );
+        } else {
+          processedMap = importedData.map;
+        }
+
+        setGridWidth(processedMap[0].length);
+        setLevelData(processedMap);
+        setSelectedBlockPosition(null);
+
+        if (importedData.backgroundColor) {
+          setBackgroundColor(importedData.backgroundColor);
+        }
+      } catch (error) {
+        alert('Error importing level: ' + error.message);
+      }
+    };
+    reader.readAsText(file);
   }, []);
 
   const clearLevel = useCallback(() => {
     if (window.confirm('Are you sure you want to clear the entire level?')) {
       setLevelData(Array.from({ length: GRID_HEIGHT }, () => Array(gridWidth).fill(null)));
-      setSelectedBlockPosition(null); // Clear selected block on clear
+      setSelectedBlockPosition(null);
     }
   }, [gridWidth]);
 
+  // Tile placement
   const updateTile = useCallback((row, col) => {
     if (row < 0 || row >= GRID_HEIGHT || col < 0 || col >= gridWidth) return;
 
     setLevelData(prev => {
       const newGrid = [...prev];
       const newRow = [...newGrid[row]];
+
       if (eraseMode) {
         newRow[col] = null;
       } else {
-        if (selectedTileId === 'mystery') {
-          // Always create mystery blocks as objects with content
-          newRow[col] = {
-            id: 'mystery',
-            content: { type: 'auto' }
-          };
-        } else {
-          // Other tiles are just stored as strings
-          newRow[col] = selectedTileId;
-        }
+        newRow[col] = selectedTileId === 'mystery' ?
+          { id: 'mystery', content: { type: 'auto' } } :
+          selectedTileId;
       }
+
       newGrid[row] = newRow;
       return newGrid;
     });
   }, [eraseMode, selectedTileId, gridWidth]);
 
+  // Mouse event handlers
   const handleTileMouseDown = useCallback((e, rowIndex, colIndex) => {
     if (e.button === 0) {
-      // Only place tiles if we're not trying to select them
       setPlacementMode(true);
+      setIsMouseDown(true);
 
       const selectedTile = tileById[selectedTileId];
       const imageSizeW = selectedTile?.w || TILE_SIZE;
       const imageSizeH = selectedTile?.h || TILE_SIZE;
-
       const tilesWide = imageSizeW / TILE_SIZE;
       const offset = Math.floor(tilesWide / 2);
-
-      const centerCol = tilesWide % 2 === 1 ? (colIndex - offset) : colIndex;
+      const centerCol = colIndex; //tilesWide % 2 === 1 ? (colIndex - offset) : colIndex;
       const newRow = (rowIndex - (imageSizeH / TILE_SIZE - 1));
 
-      setIsMouseDown(true);
       updateTile(newRow, centerCol);
     } else if (e.button === 1) {
       e.preventDefault();
       const rect = gridRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left + scrollPosition;
       const y = e.clientY - rect.top;
-
       const col = Math.floor(x / TILE_SIZE);
       const row = Math.floor(y / TILE_SIZE);
 
@@ -506,10 +531,8 @@ const LevelBuilder = ({ onBack }) => {
       const selectedTile = tileById[selectedTileId];
       const imageSizeW = selectedTile?.w || TILE_SIZE;
       const imageSizeH = selectedTile?.h || TILE_SIZE;
-
       const tilesWide = imageSizeW / TILE_SIZE;
       const offset = Math.floor(tilesWide / 2);
-
       const centerCol = tilesWide % 2 === 1 ? (colIndex - offset) : colIndex;
       const newRow = (rowIndex - (imageSizeH / TILE_SIZE - 1));
 
@@ -524,7 +547,7 @@ const LevelBuilder = ({ onBack }) => {
       setRulerEnd(null);
     } else {
       setIsMouseDown(false);
-      setPlacementMode(false); // Exit placement mode on mouse up
+      setPlacementMode(false);
     }
   }, [middleMouseDragging]);
 
@@ -533,7 +556,6 @@ const LevelBuilder = ({ onBack }) => {
       const rect = gridRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left + scrollPosition;
       const y = e.clientY - rect.top;
-
       const col = Math.floor(x / TILE_SIZE);
       const row = Math.floor(y / TILE_SIZE);
 
@@ -541,62 +563,51 @@ const LevelBuilder = ({ onBack }) => {
     }
   }, [middleMouseDragging, scrollPosition]);
 
-  // Calculate visible range - but render all tiles for now to fix placement
-  const calculateVisibleRange = useCallback(() => {
+  // Calculate visible range
+  const { startCol, endCol } = useMemo(() => {
     const startCol = Math.floor(scrollPosition / TILE_SIZE);
     const endCol = Math.min(startCol + visibleColumns + 1, gridWidth);
     return { startCol, endCol };
   }, [scrollPosition, visibleColumns, gridWidth]);
 
-  const { startCol, endCol } = calculateVisibleRange();
-
-  // Add visual highlight for selected block
-  const getSelectedStyle = useCallback((rowIndex, colIndex) => {
-    if (selectedBlockPosition &&
-      selectedBlockPosition.row === rowIndex &&
-      selectedBlockPosition.col === colIndex) {
-      return {
-        outlineColor: 'rgba(0, 255, 255, 0.8)',
-        outlineStyle: 'solid',
-        outlineWidth: '2px',
-        outlineOffset: '0px',
-        zIndex: 20
-      };
-    }
-    return {};
-  }, [selectedBlockPosition]);
+  const ToolbarButton = ({ onClick, className, children }) => (
+    <button
+      onClick={onClick}
+      className={`px-2 py-2 rounded text-xs ${className || 'bg-neutral-700'}`}
+    >
+      {children}
+    </button>
+  );
 
   return (
     <div className="font-press absolute inset-0 bg-black text-white flex flex-col p-2 select-none overscroll-y-none">
       <div className="flex flex-1 gap-2 h-full">
         <div className="bg-black border-r border-[#0B0B0B] p-2 flex flex-col gap-2 w-80">
           <div className="flex flex-col gap-2 mb-2">
-            <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+            <input
+              type="color"
+              value={backgroundColor}
+              onChange={(e) => setBackgroundColor(e.target.value)}
+            />
 
-            <button
+            <ToolbarButton
               onClick={() => {
                 setEraseMode(!eraseMode);
-                setSelectedBlockPosition(null); // Clear selection when toggling erase mode
+                setSelectedBlockPosition(null);
               }}
-              className={`px-2 py-2 rounded text-xs ${eraseMode ? 'bg-red-600' : 'bg-neutral-700'}`}
+              className={eraseMode ? 'bg-red-600' : 'bg-neutral-700'}
             >
               {eraseMode ? 'ERASE MODE' : 'PLACE MODE'}
-            </button>
+            </ToolbarButton>
 
-            <button
-              onClick={() => setShowGrid(!showGrid)}
-              className={`px-2 py-2 rounded text-xs bg-neutral-700`}
-            >
+            <ToolbarButton onClick={() => setShowGrid(!showGrid)}>
               {showGrid ? 'HIDE GRID' : 'SHOW GRID'}
-            </button>
+            </ToolbarButton>
 
             <div className="flex gap-1">
-              <button
-                onClick={exportLevel}
-                className="px-2 py-2 rounded text-xs bg-neutral-700 flex-1"
-              >
+              <ToolbarButton onClick={exportLevel} className="flex-1 bg-neutral-700">
                 EXPORT
-              </button>
+              </ToolbarButton>
 
               <label className="px-2 py-2 rounded text-xs bg-neutral-700 cursor-pointer flex-1 text-center">
                 IMPORT
@@ -609,27 +620,22 @@ const LevelBuilder = ({ onBack }) => {
               </label>
             </div>
 
-            <button
+            <ToolbarButton
               onClick={() => {
-                setLevelData((prevData) => {
-                  const newData = prevData.map((row) => [...row, null]); // Add column
-                  setGridWidth(newData[0]?.length || 0); // Use updated data
+                setLevelData(prevData => {
+                  const newData = prevData.map(row => [...row, null]);
+                  setGridWidth(newData[0]?.length || 0);
                   return newData;
                 });
-
-                setScrollPosition((prev) => prev + TILE_SIZE);
+                setScrollPosition(prev => prev + TILE_SIZE);
               }}
-              className="px-2 py-2 rounded text-xs bg-neutral-700"
             >
               ADD COLUMN
-            </button>
+            </ToolbarButton>
 
-            <button
-              onClick={clearLevel}
-              className="px-2 py-2 rounded text-xs bg-red-700"
-            >
+            <ToolbarButton onClick={clearLevel} className="bg-red-700">
               CLEAR
-            </button>
+            </ToolbarButton>
           </div>
 
           <TileSelector
@@ -688,22 +694,22 @@ const LevelBuilder = ({ onBack }) => {
                 </div>
               )}
 
-              {/* Grid Lines Overlay */}
-              {showGrid ? <div
-                className="absolute top-0 left-0 pointer-events-none"
-                style={{
-                  width: `${gridWidth * TILE_SIZE}px`,
-                  height: `${GRID_HEIGHT * TILE_SIZE + 1}px`,
-                  backgroundSize: `${TILE_SIZE}px ${TILE_SIZE}px`,
-                  backgroundImage: `
-                    linear-gradient(to right, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 1px, transparent 1px)
-                  `,
-                  zIndex: 10,
-                }}
-              /> : null}
+              {showGrid && (
+                <div
+                  className="absolute top-0 left-0 pointer-events-none"
+                  style={{
+                    width: `${gridWidth * TILE_SIZE}px`,
+                    height: `${GRID_HEIGHT * TILE_SIZE + 1}px`,
+                    backgroundSize: `${TILE_SIZE}px ${TILE_SIZE}px`,
+                    backgroundImage: `
+                      linear-gradient(to right, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 1px, transparent 1px)
+                    `,
+                    zIndex: 10,
+                  }}
+                />
+              )}
 
-              {/* Selected Block Highlight */}
               {selectedBlockPosition && (
                 <div
                   className="absolute pointer-events-none z-30"
@@ -718,19 +724,17 @@ const LevelBuilder = ({ onBack }) => {
                 />
               )}
 
-              {/* Render all tiles for now to fix placement issues */}
+              {/* Render visible tiles */}
               {levelData.map((row, rowIndex) =>
                 row.map((tileId, colIndex) => {
-                  // Only render tiles that are close to the visible area
+                  // Only render tiles near the visible area
                   if (colIndex < startCol - 2 || colIndex > endCol + 2) {
-                    return null; // Skip tiles far outside the visible area
+                    return null;
                   }
-
-                  const tileKey = `${rowIndex}-${colIndex}`;
 
                   return (
                     <Tile
-                      key={tileKey}
+                      key={`${rowIndex}-${colIndex}`}
                       rowIndex={rowIndex}
                       colIndex={colIndex}
                       tileId={tileId}
@@ -747,88 +751,7 @@ const LevelBuilder = ({ onBack }) => {
           </div>
 
           {/* Block Editor Panel */}
-          {selectedBlock && (
-            <div className="p-2 bg-neutral-800 text-sm rounded shadow">
-              {/* Mystery Block Settings */}
-              {(typeof selectedBlock === 'object' && selectedBlock.id === 'mystery' || selectedBlock === 'mystery') && (
-                <>
-                  <h3 className="font-bold mb-2">Mystery Block Settings</h3>
-                  <select
-                    className="w-full text-black mb-2 p-1 rounded"
-                    value={
-                      typeof selectedBlock === 'object' && selectedBlock.content
-                        ? selectedBlock.content.type
-                        : 'auto'
-                    }
-                    onChange={(e) => updateMysteryContent(e.target.value)}
-                  >
-                    {mysteryOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  {(typeof selectedBlock === 'object' &&
-                    selectedBlock.content &&
-                    selectedBlock.content.type === 'custom') && (
-                    <select
-                      className="w-full text-black p-1 rounded"
-                      value={selectedBlock.content.customItemId || ''}
-                      onChange={(e) => updateMysteryContent('custom', e.target.value)}
-                    >
-                      <option value="">-- Choose Tile --</option>
-                      {imageList.map(tile => (
-                        <option key={tile.id} value={tile.id}>
-                          {tile.id}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </>
-              )}
-
-              {/* Brick Block Settings */}
-              {(typeof selectedBlock === 'object' && selectedBlock.id === 'brick' || selectedBlock === 'brick') && (
-                <>
-                  <h3 className="font-bold mb-2">Brick Block Settings</h3>
-                  <select
-                    className="w-full text-black mb-2 p-1 rounded"
-                    value={
-                      typeof selectedBlock === 'object' && selectedBlock.content
-                        ? selectedBlock.content.type
-                        : 'none'
-                    }
-                    onChange={(e) => updateBrickContent(e.target.value)}
-                  >
-                    <option value="none">Empty</option>
-                    {brickOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Optional: Quantity selector for coins */}
-                  {(typeof selectedBlock === 'object' &&
-                    selectedBlock.content &&
-                    selectedBlock.content.type === 'coin') && (
-                    <div className="mt-2">
-                      <label className="block text-sm mb-1">Coin Count:</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        className="w-full text-black p-1 rounded"
-                        value={selectedBlock.content.quantity || 1}
-                        onChange={(e) => updateBrickContent('coin', parseInt(e.target.value, 10))}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
+          <BlockEditor selectedBlock={selectedBlock} updateBlockContent={updateBlockContent} />
 
           {/* Scrollbar */}
           <div className="w-full bg-neutral-900/50 h-4 relative">

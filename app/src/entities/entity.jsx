@@ -1,7 +1,7 @@
 import {MAX_RUN, MAX_WALK} from "../constants/physicsConstants.jsx";
 
 export default class Entity {
-  constructor(x, y, width, height) {
+  constructor(x, y, width, height, imageHeight = null) {
     this.y = y;
     this.x = x;
 
@@ -17,6 +17,7 @@ export default class Entity {
     this.currentFrame = 0;
     this.frameTime = 0;
     this.frameDuration = 0.2;
+    this.imageHeight = imageHeight;
 
     this.start = false;
   }
@@ -39,7 +40,6 @@ export default class Entity {
     }
   }
 
-
   draw(ctx, flipY = false) {
     if (!this.currentFrames.length) return;
 
@@ -57,7 +57,16 @@ export default class Entity {
 
     ctx.scale(scaleX, scaleY);
 
-    ctx.drawImage(frame, -this.width / 2, -this.height / 2, this.width, this.height);
+    ctx.drawImage(
+      frame,
+      -this.width / 2,
+      // Use a universal approach that works for all heights
+      this.imageHeight ?
+        -(this.height / 2) - (this.imageHeight - this.height) :
+        -this.height / 2,
+      this.width,
+      this.imageHeight ? this.imageHeight : this.height
+    );
 
     ctx.restore();
   }

@@ -1,3 +1,5 @@
+const DEBUG_MODE = true;
+
 import Entity from './Entity';
 import Fireball from './fireball.jsx';
 import {
@@ -17,56 +19,53 @@ import {
   WALK_FALL,
   WALK_FALL_A
 } from "../constants/physicsConstants.jsx";
-
-import MarioSmallIdle from '../assets/Sprites/0/Mario_Small_Idle.png';
-import MarioSmallRun1 from '../assets/Sprites/0/Mario_Small_Run1.png';
-import MarioSmallRun2 from '../assets/Sprites/0/Mario_Small_Run2.png';
-import MarioSmallRun3 from '../assets/Sprites/0/Mario_Small_Run3.png';
-import MarioSmallJump from '../assets/Sprites/0/Mario_Small_Jump.png';
-import MarioSmallSlide from '../assets/Sprites/0/Mario_Small_Slide.png';
-import MarioSmallDeath from '../assets/Sprites/0/Mario_Small_Death.png';
-
-import MarioBigIdle from '../assets/Sprites/0/Mario_Big_Idle.png';
-import MarioBigRun1 from '../assets/Sprites/0/Mario_Big_Run1.png';
-import MarioBigRun2 from '../assets/Sprites/0/Mario_Big_Run2.png';
-import MarioBigRun3 from '../assets/Sprites/0/Mario_Big_Run3.png';
-import MarioBigJump from '../assets/Sprites/0/Mario_Big_Jump.png';
-import MarioBigSlide from '../assets/Sprites/0/Mario_Big_Slide.png';
-import MarioBigCrouch from '../assets/Sprites/0/Mario_Big_Crouch.png';
-
-import MarioFireIdle from '../assets/Sprites/0/Mario_Fire_Idle.png';
-import MarioFireRun1 from '../assets/Sprites/0/Mario_Fire_Run1.png';
-import MarioFireRun2 from '../assets/Sprites/0/Mario_Fire_Run2.png';
-import MarioFireRun3 from '../assets/Sprites/0/Mario_Fire_Run3.png';
-import MarioFireJump from '../assets/Sprites/0/Mario_Fire_Jump.png';
-import MarioFireSlide from '../assets/Sprites/0/Mario_Fire_Slide.png';
-import MarioFireCrouch from '../assets/Sprites/0/Mario_Fire_Crouch.png';
-import MarioFireThrow from '../assets/Sprites/0/Mario_Fire_Throw.png';
-
-import {Flower, Mushroom, Starman} from "../Blocks/item.jsx";
 import {TILE_SIZE} from "../constants/constants.jsx";
+import {Flower, Mushroom, Starman} from "../Blocks/item.jsx";
 import Goomba from "./goomba.jsx";
 import Koopa from "./koopa.jsx";
 import Shell from "./shell.jsx";
+import PiranhaPlant from "./piranhaPlant.jsx";
 
-export const MarioSmallIdleFrames  = [MarioSmallIdle];
-export const MarioSmallRunFrames   = [MarioSmallRun1, MarioSmallRun2, MarioSmallRun3];
-export const MarioSmallJumpFrames  = [MarioSmallJump];
-export const MarioSmallSlideFrames = [MarioSmallSlide];
-export const MarioSmallDeathFrames = [MarioSmallDeath];
+// Dynamic import of all sprite assets
+const spriteImports = import.meta.glob('../assets/Sprites/0/*.png', { eager: true });
 
-export const MarioBigIdleFrames   = [MarioBigIdle];
-export const MarioBigRunFrames    = [MarioBigRun1, MarioBigRun2, MarioBigRun3];
-export const MarioBigJumpFrames   = [MarioBigJump];
-export const MarioBigSlideFrames  = [MarioBigSlide];
-export const MarioBigCrouchFrames = [MarioBigCrouch];
+const starmanSpriteImports = {
+  green: import.meta.glob('../assets/Sprites/0/starman/0/*.png', { eager: true }),
+  red: import.meta.glob('../assets/Sprites/0/starman/1/*.png', { eager: true }),
+  black: import.meta.glob('../assets/Sprites/0/starman/2/*.png', { eager: true }),
+};
 
-export const MarioFireIdleFrames   = [MarioFireIdle];
-export const MarioFireRunFrames    = [MarioFireRun1, MarioFireRun2, MarioFireRun3];
-export const MarioFireJumpFrames   = [MarioFireJump];
-export const MarioFireSlideFrames  = [MarioFireSlide];
-export const MarioFireCrouchFrames = [MarioFireCrouch];
-export const MarioFireThrowFrames = [MarioFireThrow];
+// Helper to get the actual image path from the import
+const getSprite = (name) => {
+  const key = Object.keys(spriteImports).find(path => path.includes(name));
+  return key ? spriteImports[key].default : null;
+};
+
+const getStarmanSprite = (color, name) => {
+  const spriteImports = starmanSpriteImports[color];
+  const key = Object.keys(spriteImports).find(path => path.includes(name));
+  return key ? spriteImports[key].default : null;
+};
+
+// Organize sprites by state and type
+export const MarioSmallIdleFrames  = [getSprite('Mario_Small_Idle')];
+export const MarioSmallRunFrames   = [getSprite('Mario_Small_Run1'), getSprite('Mario_Small_Run2'), getSprite('Mario_Small_Run3')];
+export const MarioSmallJumpFrames  = [getSprite('Mario_Small_Jump')];
+export const MarioSmallSlideFrames = [getSprite('Mario_Small_Slide')];
+export const MarioSmallDeathFrames = [getSprite('Mario_Small_Death')];
+
+export const MarioBigIdleFrames   = [getSprite('Mario_Big_Idle')];
+export const MarioBigRunFrames    = [getSprite('Mario_Big_Run1'), getSprite('Mario_Big_Run2'), getSprite('Mario_Big_Run3')];
+export const MarioBigJumpFrames   = [getSprite('Mario_Big_Jump')];
+export const MarioBigSlideFrames  = [getSprite('Mario_Big_Slide')];
+export const MarioBigCrouchFrames = [getSprite('Mario_Big_Crouch')];
+
+export const MarioFireIdleFrames   = [getSprite('Mario_Fire_Idle')];
+export const MarioFireRunFrames    = [getSprite('Mario_Fire_Run1'), getSprite('Mario_Fire_Run2'), getSprite('Mario_Fire_Run3')];
+export const MarioFireJumpFrames   = [getSprite('Mario_Fire_Jump')];
+export const MarioFireSlideFrames  = [getSprite('Mario_Fire_Slide')];
+export const MarioFireCrouchFrames = [getSprite('Mario_Fire_Crouch')];
+export const MarioFireThrowFrames  = [getSprite('Mario_Fire_Throw')];
 
 export default class Player extends Entity {
   constructor(x, y, collision, addItemCallback, color = 0) {
@@ -98,9 +97,22 @@ export default class Player extends Entity {
     this.visibilityToggle = true;
     this.flashInterval = 50;
     this.lastFlashTime = 0;
+
     this.starmanMode = false;
+    this.starmanCycleTimer = 0;
+    this.starmanColorIndex = 0;
+    this.starmanCycleDuration = 500;
+    this.starmanTotalDuration = 10000;
+    this.starmanTimer = 0;
+
+    this.maxJumpVelocity = -155;
 
     this.prevY = this.y;
+
+    if (DEBUG_MODE) {
+      this.activateStarman();
+      this.starmanTotalDuration = Math.infinity;
+    }
   }
 
   preloadAnimations() {
@@ -127,7 +139,11 @@ export default class Player extends Entity {
     const frames = this.getCurrentAnimationFrames();
     this.setAnimationFrames(frames);
 
-    const duration = this.map(Math.abs(this.vx), 0, MAX_WALK, 0.3, 0.15)
+    // Modify animation speed based on movement speed, but maintain consistent timing during starman mode
+    let clampedSpeed = Math.min(Math.abs(this.vx), MAX_RUN);
+    let duration = this.map(clampedSpeed, 0, MAX_RUN, 0.3, 0.1);
+
+    // Call the parent Entity animation method
     super.animate(deltaTime, duration);
   }
 
@@ -136,6 +152,11 @@ export default class Player extends Entity {
     this.prevX = this.x;
 
     if (this.currentAnimation !== 'dead') {
+      // Update starman timer if active
+      if (this.starmanMode) {
+        this.updateStarmanMode(delta);
+      }
+
       if (this.isInvincible) {
         // Convert delta to milliseconds if it's in seconds
         const deltaMs = delta * 1000;
@@ -212,30 +233,42 @@ export default class Player extends Entity {
 
           this.handleMovement(delta);
 
-          // Removed duplicate gravity application here
-
+          // Jump initialization when on the ground
           if (this.keys.up) {
-            if (Math.abs(this.vx) < 50) {
-              this.vy = -260;
-              this.fallAcceleration = STOP_FALL;
-            } else if (Math.abs(this.vx) < 100) {
-              this.vy = -270;
-              this.fallAcceleration = WALK_FALL;
-            } else {
-              this.vy = -290;
-              this.fallAcceleration = RUN_FALL;
-            }
+            // Initial jump - just give minimum jump velocity
+            this.vy = this.map(this.vx, 0, MAX_RUN, -150, -110);
 
+            this.jumpHoldTime = 0; // Initialize jump hold time
             this.currentAnimation = 'jump';
             this.grounded = false;
           }
         } else {
-          if (this.vy < 0 && this.keys.up) { // holding A while jumping jumps higher
-            if (this.fallAcceleration === STOP_FALL) this.vy -= (STOP_FALL - STOP_FALL_A) * delta;
-            if (this.fallAcceleration === WALK_FALL) this.vy -= (WALK_FALL - WALK_FALL_A) * delta;
-            if (this.fallAcceleration === RUN_FALL) this.vy -= (RUN_FALL - RUN_FALL_A) * delta;
+          if (this.vy < 0 && this.keys.up) {
+            this.jumpHoldTime += delta;
+
+            // and still holding jump within the allowed window (0.3 seconds)
+            if (this.jumpHoldTime < 0.3 && this.vy > this.maxJumpVelocity) {
+              // Apply additional upward velocity while the button is held
+              if (this.fallAcceleration === STOP_FALL) this.vy -= 600 * delta;
+              if (this.fallAcceleration === WALK_FALL) this.vy -= 700 * delta;
+              if (this.fallAcceleration === RUN_FALL) this.vy -= 800 * delta;
+
+              // Cap at max velocity
+              if (this.vy < this.maxJumpVelocity) {
+                this.vy = this.maxJumpVelocity;
+              }
+            }
+
+            // Apply reduced gravity when holding jump button
+            if (this.fallAcceleration === STOP_FALL) this.vy += (STOP_FALL_A) * delta;
+            else if (this.fallAcceleration === WALK_FALL) this.vy += (WALK_FALL_A) * delta;
+            else if (this.fallAcceleration === RUN_FALL) this.vy += (RUN_FALL_A) * delta;
+          } else {
+            // Apply normal gravity when not holding jump or during descent
+            this.vy += this.fallAcceleration * delta;
           }
 
+          // Air control
           if (this.keys.right && !this.keys.left) {
             if (Math.abs(this.vx) > MAX_WALK) {
               this.vx += ACC_RUN * delta;
@@ -251,15 +284,15 @@ export default class Player extends Entity {
           }
         }
 
-        // Only apply gravity once per update
-        this.vy += this.fallAcceleration * delta;
+        // Apply gravity and clamp velocity
         this.clampVelocity();
 
+        // Update position
         this.x += this.vx * delta * SCALE;
         this.collision.checkHorizontalCollisions(this);
 
         this.y += this.vy * delta * SCALE;
-        this.collision.checkVerticalCollisions(this);
+        this.collision.checkVerticalCollisions(this, entities);
 
         if (this.vx < 0) this.facing = "left";
         if (this.vx > 0) this.facing = "right";
@@ -277,7 +310,125 @@ export default class Player extends Entity {
       }
     } else {
       this.vy += STOP_FALL_A * delta;
-      this.y += this.vy * delta * SCALE; // Added SCALE here too
+      this.y += this.vy * delta * SCALE;
+    }
+  }
+
+  updateStarmanMode(delta) {
+    // Update total starman timer
+    this.starmanTimer += delta * 1000;
+
+    // Check if starman power has expired
+    if (this.starmanTimer >= this.starmanTotalDuration) {
+      this.deactivateStarman();
+      return;
+    }
+
+    // Update color cycle timer
+    this.starmanCycleTimer += delta * 1000;
+
+    // Only change colors at appropriate intervals
+    if (this.starmanCycleTimer >= this.starmanCycleDuration) {
+      this.starmanCycleTimer = 0;
+      this.cycleStarmanColor();
+    }
+  }
+
+  cycleStarmanColor() {
+    this.starmanColorIndex = (this.starmanColorIndex + 1) % 3;
+
+    const color = this.starmanColorIndex === 0 ? "green" :
+      this.starmanColorIndex === 1 ? "red" : "black";
+
+    // Save current animation state so we can restore it
+    const currentAnimation = this.currentAnimation;
+    const currentFrameIndex = this.frameIndex;
+    const currentFrameTime = this.frameTime;
+
+    // Update all sprite sheets with new color while maintaining Mario's state
+    this.updateSpritesToStarman(color);
+
+    // Restore animation state
+    this.currentAnimation = currentAnimation;
+    this.frameIndex = currentFrameIndex;
+    this.frameTime = currentFrameTime;
+  }
+
+  updateSpritesToStarman(color) {
+    // Determine correct path name based on Mario's state
+    let pathName = "Mario_Small";
+    if (this.isBigMario) {
+      pathName = this.isFireMario ? "Mario_Fire" : "Mario_Big";
+    }
+
+    // Update all animations with the new color
+    this.animations.idle = this.preloadImages([
+      getStarmanSprite(color, `${pathName}_Idle`)
+    ]);
+
+    this.animations.run = this.preloadImages([
+      getStarmanSprite(color, `${pathName}_Run1`),
+      getStarmanSprite(color, `${pathName}_Run2`),
+      getStarmanSprite(color, `${pathName}_Run3`)
+    ]);
+
+    this.animations.jump = this.preloadImages([
+      getStarmanSprite(color, `${pathName}_Jump`)
+    ]);
+
+    this.animations.skid = this.preloadImages([
+      getStarmanSprite(color, `${pathName}_Slide`)
+    ]);
+
+    // Add crouch animation if big Mario
+    if (this.isBigMario) {
+      this.animations.crouch = this.preloadImages([
+        getStarmanSprite(color, `${pathName}_Crouch`)
+      ]);
+    }
+
+    // Add throw animation if fire Mario
+    if (this.isFireMario) {
+      this.animations.throw = this.preloadImages([
+        getStarmanSprite(color, `${pathName}_Throw`)
+      ]);
+    }
+  }
+
+  activateStarman() {
+    this.starmanMode = true;
+    this.starmanCycleTimer = 0;
+    this.starmanColorIndex = 0;
+    this.starmanTimer = 0;
+
+    // Immediately set the first starman color
+    this.cycleStarmanColor();
+  }
+
+  deactivateStarman() {
+    this.starmanMode = false;
+    this.isInvincible = false; // Remove invincibility
+    this.visibilityToggle = true;
+
+    // Restore normal sprites based on current state
+    if (this.isFireMario) {
+      this.animations.idle   = this.preloadImages(MarioFireIdleFrames);
+      this.animations.run    = this.preloadImages(MarioFireRunFrames);
+      this.animations.jump   = this.preloadImages(MarioFireJumpFrames);
+      this.animations.skid   = this.preloadImages(MarioFireSlideFrames);
+      this.animations.crouch = this.preloadImages(MarioFireCrouchFrames);
+      this.animations.throw  = this.preloadImages(MarioFireThrowFrames);
+    } else if (this.isBigMario) {
+      this.animations.idle   = this.preloadImages(MarioBigIdleFrames);
+      this.animations.run    = this.preloadImages(MarioBigRunFrames);
+      this.animations.jump   = this.preloadImages(MarioBigJumpFrames);
+      this.animations.skid   = this.preloadImages(MarioBigSlideFrames);
+      this.animations.crouch = this.preloadImages(MarioBigCrouchFrames);
+    } else {
+      this.animations.idle   = this.preloadImages(MarioSmallIdleFrames);
+      this.animations.run    = this.preloadImages(MarioSmallRunFrames);
+      this.animations.jump   = this.preloadImages(MarioSmallJumpFrames);
+      this.animations.skid   = this.preloadImages(MarioSmallSlideFrames);
     }
   }
 
@@ -292,7 +443,7 @@ export default class Player extends Entity {
 
     // Allow only two shots max in the 1s window, spaced by at least 500ms
     if (this.shotsFired < 2 && (!this.lastShotTime || now - this.lastShotTime >= 500)) {
-      this._spawnFireball();
+      this.spawnFireball();
       this.lastShotTime = now;
       this.shotsFired++;
 
@@ -305,7 +456,7 @@ export default class Player extends Entity {
     }
   }
 
-  _spawnFireball() {
+  spawnFireball() {
     const fireballX = this.facing === 'right'
       ? this.x + this.width
       : this.x - TILE_SIZE * 0.6;
@@ -380,83 +531,100 @@ export default class Player extends Entity {
   }
 
   entityCollision(entities) {
-    // Check for player colliding with enemies
+    const stompedEnemies = [];
+
     for (const entity of entities) {
-      // Basic collision detection
-      if (
-        this.x < entity.x + entity.width &&
-        this.x + this.width > entity.x &&
-        this.y < entity.y + entity.height &&
-        this.y + this.height > entity.y
-      ) {
-        const playerBottom = this.y + this.height;
-        const entityTop = entity.y;
+      // Only apply tolerance to side collisions, not to top collisions
+      const tolerance = entity instanceof Koopa ? entity.height / 3 : 0;
 
-        const wasAboveEntity = this.prevY + this.height <= entity.y + 5;
+      // Store base collision bounds
+      let collisionX = this.x < entity.x + entity.width && this.x + this.width > entity.x;
+      let collisionY = this.y < entity.y + entity.height && this.y + this.height > entity.y;
 
-        const isMovingDownward = this.vy > 0;
+      // Check for stomp specifically
+      const playerBottom = this.y + this.height;
+      const entityTop = entity.y;
+      const wasAboveEntity = this.prevY + this.height <= entity.y + 5;
+      const isMovingDownward = this.vy > 0;
+      const isTouchingTop = playerBottom >= entityTop && playerBottom <= entityTop + 15;
+      const isSuccessfulTopHit = wasAboveEntity && isMovingDownward && isTouchingTop && collisionX;
 
-        const isTouchingTop = playerBottom >= entityTop && playerBottom <= entityTop + 15;
+      // If it's a successful stomp, process it regardless of tolerance
+      if (isSuccessfulTopHit && (entity instanceof Goomba || entity instanceof Koopa) && !entity.isDead) {
+        stompedEnemies.push(entity);
+        continue;
+      }
 
-        const isSuccessfulTopHit = wasAboveEntity && isMovingDownward && isTouchingTop;
+      if (isSuccessfulTopHit && entity instanceof Shell) {
+        entity.shoot(this.facing);
+        this.vy = -200;
+        collisionX = false;
+        continue;
+      }
 
-        if (entity instanceof Starman) {
-          this.starmanMode = false;
-          entity.isCollected = true;
-        }
-
+      // Only process non-stomp collisions if there's a collision with tolerance applied
+      if (collisionX) {
         if (entity instanceof Shell) {
           if (entity.vx === 0) {
             entity.shoot(this.facing);
-            this.vy = -175;
-          } else if (Math.abs(entity.vx) > 0) {
-            if (isSuccessfulTopHit) {
-              this.vy = -175;
-              break;
-            } else {
-              if (this.isBigMario) {
-                this.shrink();
-              } else {
-                if (!this.isInvincible) {
-                  this.dead();
-                }
-              }
+            continue;
+          }
+        }
+      }
+
+      if (collisionX && collisionY) {
+        if (entity instanceof PiranhaPlant) {
+          if (this.starmanMode) {
+            entity.dead();
+          } else if (this.isBigMario) {
+            this.shrink();
+          } else if (!this.isInvincible) {
+            this.dead();
+          }
+          continue;
+        }
+
+        if (entity instanceof Shell) {
+          if (Math.abs(entity.vx) >= 0) {
+            if (this.starmanMode) {
+              console.log(entity);
+              if (entity.dead) entity.dead();
+            } else if (this.isBigMario) {
+              this.shrink();
+            } else if (!this.isInvincible) {
+              this.dead();
             }
+            continue;
           }
         }
 
-        if ((entity instanceof Goomba || entity instanceof Koopa) && !entity.isDead) {
-          if (isSuccessfulTopHit) {
-            entity.dead(this);
-            this.vy = -200;
+        if (entity instanceof Starman) {
+          this.activateStarman();
+          entity.isCollected = true;
+          continue;
+        }
 
-            if (entity instanceof Koopa) this.vx *= 1.1;
-            break;
-          } else if (!entity.isDead) {
-            if (this.isBigMario) {
-              this.shrink();
-            } else {
-              if (!this.isInvincible) {
-                this.dead();
-              }
-            }
+        if ((entity instanceof Goomba || entity instanceof Koopa) && !entity.isDead) {
+          if (this.starmanMode) {
+            entity.dead(new Shell());
+          } else if (this.isBigMario) {
+            this.shrink();
+          } else if (!this.isInvincible) {
+            this.dead();
           }
+          continue;
         }
 
         if (entity instanceof Mushroom) {
           entity.collect();
-
-          if (!this.isBigMario) {
-            this.grow();
-          }
+          if (!this.isBigMario) this.grow();
+          continue;
         }
 
         if (entity instanceof Flower) {
           entity.collect();
-
           if (this.isBigMario) {
             this.isFireMario = true;
-
             this.animations.idle   = this.preloadImages(MarioFireIdleFrames);
             this.animations.run    = this.preloadImages(MarioFireRunFrames);
             this.animations.jump   = this.preloadImages(MarioFireJumpFrames);
@@ -466,7 +634,18 @@ export default class Player extends Entity {
         }
       }
     }
+
+    // Now handle all stomped enemies in one go
+    if (stompedEnemies.length > 0) {
+      this.vy = -200;
+      for (const e of stompedEnemies) {
+        if (e instanceof Goomba || e instanceof Koopa) {
+          e.dead(this);
+        }
+      }
+    }
   }
+
 
   clampVelocity() {
     if (this.vy >= MAX_FALL) this.vy = MAX_FALL;
@@ -577,4 +756,9 @@ export default class Player extends Entity {
 
     this.isDead = true;
   }
+
+  map(x, low1, high1, low2, high2) {
+    return low2 + ((x - low1) * (high2 - low2)) / (high1 - low1);
+  }
+
 }
