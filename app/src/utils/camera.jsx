@@ -12,7 +12,7 @@ const useCamera = () => {
 
   const OFFSET = TILE_SIZE * 2;
 
-  let screenWidth = TILE_SIZE * 26;
+  // let screenWidth = TILE_SIZE * 26;
 
   const handleKey = (down) => (e) => {
     if (e.key === 'ArrowLeft') keys.current.left = down;
@@ -30,7 +30,7 @@ const useCamera = () => {
   }, []);
 
   const updateCamera = (dt) => {
-    if (mapWidth >= TILE_SIZE * 26) {
+    if (mapWidth >= TILE_SIZE * 28) {
       let currentCameraX = 0;
       if ((playerX - OFFSET) >= TILE_SIZE * 10) {
         currentCameraX = (playerX - OFFSET) - TILE_SIZE * 10;

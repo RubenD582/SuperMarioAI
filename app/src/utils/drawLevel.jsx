@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {blocks, mapType, mapWidth} from '../screens/game.jsx';
+import {blocks, mapType, mapWidth, scores} from '../screens/game.jsx';
 import Fireball from "../entities/fireball.jsx";
 import Goomba from "../entities/goomba.jsx";
 import Item from "../Blocks/item.jsx";
@@ -8,6 +8,7 @@ import Shell from "../entities/shell.jsx";
 import PiranhaPlant from "../entities/piranhaPlant.jsx";
 import {DRAW_HITBOX, TILE_SIZE, TV_EFFECT} from "../constants/constants.jsx";
 import Block from "../Blocks/block.jsx";
+import Entity from "../entities/entity.jsx";
 
 const OldTVEffects = React.forwardRef(({
   width = 800,
@@ -41,7 +42,7 @@ const OldTVEffects = React.forwardRef(({
     const data = imageData.data;
 
     // Fill the canvas with random static (grayscale)
-    for (let i = 0; i < data.length; i += 16) {
+    for (let i = 0; i < 0; i += 16) {
       const noise = Math.random() * 100;
       data[i] = noise;        // Red channel
       data[i + 1] = noise;    // Green channel
@@ -59,12 +60,16 @@ const OldTVEffects = React.forwardRef(({
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; // Light black for scanlines
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'; // Light black for scanlines
+    ctx.lineWidth = 2; // Set the line width
 
     // Draw horizontal scanlines
-    const lineHeight = 1; // Height of each scanline
-    for (let y = 0; y < h; y += lineHeight * 2) {
-      ctx.fillRect(0, y, w, lineHeight);
+    const lineHeight = 1;
+    for (let y = 0; y < h; y += lineHeight * 4) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke(); // Apply the line width and color
     }
 
     return canvas;
@@ -106,7 +111,7 @@ const OldTVEffects = React.forwardRef(({
     const imageData = ctx.createImageData(width, height);
     const data = imageData.data;
 
-    for (let i = 0; i < data.length; i += 4) {
+    for (let i = 0; i < 0; i += 4) {
       const noise = Math.random() * 255;
       data[i] = noise;
       data[i + 1] = noise;
@@ -185,20 +190,13 @@ const OldTVEffects = React.forwardRef(({
         activeRollBar.y += activeRollBar.speed * 0.016; // Move based on time
 
         ctx.globalAlpha = activeRollBar.alpha;
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.fillRect(0, activeRollBar.y, width, activeRollBar.height);
         ctx.globalAlpha = 1;
 
         if (activeRollBar.y > height) {
           activeRollBar = null; // Remove after leaving screen
         }
-      }
-
-      // Glitch line
-      if (Math.random() < 0.05 * effectIntensity) {
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        const y = Math.random() * height;
-        ctx.fillRect(0, y, width, 2);
       }
 
       ctx.restore();
@@ -278,10 +276,8 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
       const canvas = canvasRef.current;
       if (!canvas || !blocks.length) return;
 
-      let screenWidth = TILE_SIZE * 26;
-      if (mapWidth <= TILE_SIZE * 26) {
-        screenWidth = mapWidth;
-      }
+      const tilesWide = Math.min(28, Math.ceil(mapWidth / TILE_SIZE));
+      const screenWidth = tilesWide * TILE_SIZE;
 
       const canvasHeight = Math.max(...blocks.map(block => block.y + block.height), 0);
 
@@ -319,7 +315,9 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const screenWidth = TILE_SIZE * 26;
+    const tilesWide = Math.min(28, Math.ceil(mapWidth / TILE_SIZE));
+    const screenWidth = tilesWide * TILE_SIZE;
+
     const screenHeight = window.innerHeight;
     const leftBound = cameraXRef.current - 50;
     const rightBound = cameraXRef.current + screenWidth + 50;
@@ -333,36 +331,64 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     ctx.save();
     ctx.translate(-cameraXRef.current, 0);
 
-    // Draw blocks (layers 0, 1, 2, and 3) and entities (Items, PiranhaPlants, Goombas, Koopas, Shells, Fireballs)
-    [...blocks, ...entities].forEach(item => {
-      // Draw blocks
-      if (item instanceof Block) {
-        if (item.x + item.width >= leftBound && item.x <= rightBound) {
-          item.draw(ctx);
-          if (item.fragments?.length > 0) {
-            item.drawAllFragments(ctx);
-          }
+    // Filter visible blocks and entities
+    const visibleBlocks = blocks
+      .filter(block => block.x + block.width >= leftBound && block.x <= rightBound);
+
+    const visibleEntities = entities
+      .filter(entity => entity.x + entity.width >= leftBound && entity.x <= rightBound)
+      .sort((a, b) => a.layer - b.layer); // optional if you want entity layering
+
+    // 1. Draw blocks with layer === 0
+    visibleBlocks
+      .filter(block => block.layer === 0)
+      .forEach(block => {
+        block.draw(ctx);
+        if (block.fragments?.length > 0) {
+          block.drawAllFragments(ctx);
         }
-      }
-      // Draw entities (Items, PiranhaPlants, Goombas, Koopas, Shells, Fireballs)
-      else if (item instanceof Item || item instanceof PiranhaPlant) {
-        item.draw(ctx, item instanceof PiranhaPlant ? item.flipY : undefined);
-      }
-      else if (item instanceof Goomba || item instanceof Koopa || item instanceof Shell) {
-        if (item.x + item.width >= leftBound && item.x <= rightBound) {
-          item.start = true;
-          item.draw(ctx, item.flipY);
-          if (DRAW_HITBOX) {
-            item.collision.drawDebug(ctx, item);
-          }
+      });
+
+    // 2. Draw entities
+    visibleEntities.forEach(entity => {
+      if (entity instanceof Item) {
+        if ('start' in entity) {
+          entity.start = true;
         }
-      }
-      else if (item instanceof Fireball) {
-        item.draw(ctx);
+
+        entity.draw(ctx, entity.flipY);
+        if (DRAW_HITBOX && entity.collision) {
+          entity.collision.drawDebug(ctx, entity);
+        }
       }
     });
 
-    // Draw players
+    // 3. Draw blocks with layer > 0
+    visibleBlocks
+      .filter(block => block.layer > 0 && block.layer < 4)
+      .sort((a, b) => a.layer - b.layer) // optional: sort by layer if needed
+      .forEach(block => {
+        block.draw(ctx);
+        if (block.fragments?.length > 0) {
+          block.drawAllFragments(ctx);
+        }
+      });
+
+    // Draw entities that is not items, such as Goombas, Koopas, etc.
+    visibleEntities.forEach(entity => {
+      if (!(entity instanceof Item)) {
+        if ('start' in entity) {
+          entity.start = true;
+        }
+
+        entity.draw(ctx, entity.flipY);
+        if (DRAW_HITBOX && entity.collision) {
+          entity.collision.drawDebug(ctx, entity);
+        }
+      }
+    });
+
+    // 4. Draw players last
     players.forEach(player => {
       if (player.isInvincible && !player.visibilityToggle) return;
       player.draw(ctx);
@@ -371,17 +397,52 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
       }
     });
 
+    visibleBlocks
+      .filter(block => block.layer === 4)
+      .sort((a, b) => a.layer - b.layer)
+      .forEach(block => {
+        block.draw(ctx);
+        if (block.fragments?.length > 0) {
+          block.drawAllFragments(ctx);
+        }
+      });
+
+    // 5. Draw pipe tops absolutely last
+    visibleBlocks
+      .filter(block => block.type === "pipeTop" || block.type === "pipeConnection")
+      .forEach(block => {
+        block.draw(ctx);
+        if (block.fragments?.length > 0) {
+          block.drawAllFragments(ctx);
+        }
+      });
+
+    scores.forEach((score) => {
+      score.draw(ctx);
+    });
+
     ctx.restore();
 
     if (contentCanvas) {
       const contentCtx = contentCanvas.getContext('2d');
       if (contentCtx) {
         contentCtx.clearRect(0, 0, contentCanvas.width, contentCanvas.height);
-        contentCtx.drawImage(canvas, 0, 0, contentCanvas.width, contentCanvas.height);
+
+        let drawWidth = canvas.width;
+        let drawHeight = canvas.height;
+        let offsetX = (contentCanvas.width - drawWidth) / 2;
+        let offsetY = (contentCanvas.height - drawHeight) / 2;
+
+        // Optionally, prevent negative offset if the canvas is too big
+        offsetX = Math.max(0, offsetX);
+        offsetY = Math.max(0, offsetY);
+
+        contentCtx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
       }
     }
-  };
 
+
+  };
 
   return (
     TV_EFFECT ? (

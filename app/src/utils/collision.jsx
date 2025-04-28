@@ -5,7 +5,8 @@ import Player from '../entities/player.jsx';
 import Goomba from "../entities/goomba.jsx";
 import Koopa from "../entities/koopa.jsx";
 import Shell from "../entities/shell.jsx";
-import { setLevel } from '../utils/levelManager.jsx';
+import PiranhaPlant from "../entities/piranhaPlant.jsx";
+import PipeTop from "../Blocks/pipeTop.jsx";
 
 export default class Collision {
   constructor(addItemCallback) {
@@ -23,8 +24,8 @@ export default class Collision {
   }
 
   getEntityBounds(e, isVertical = false) {
-    const toleranceX = 0;
-    const toleranceY = e instanceof Koopa ? TILE_SIZE : 0;
+    const toleranceX = e.toleranceX || 0;
+    const toleranceY =  e.toleranceY || 0;
     const buffer = e.isBigMario ? 3 : 2;
 
     return {
@@ -134,6 +135,18 @@ export default class Collision {
               e.currentAnimation = "idle";
               e.startPipeAnimation('down', targetLevel, targetX, targetY);
               return true;
+            } else if (e instanceof Player && block.type === 'pipeTop') {
+              const plantEntities = entities.filter(entity => entity instanceof PiranhaPlant && entity.plantID === block.plantID);
+
+              plantEntities.forEach((plantEntity) => {
+                plantEntity.disable();
+              });
+            } else if (e instanceof Player) {
+              entities.forEach((entity) => {
+                if (entity instanceof PiranhaPlant && entity.isDisabled) {
+                  entity.enable();
+                }
+              });
             }
           }
         }
@@ -197,37 +210,50 @@ export default class Collision {
     });
   }
 
-  checkEntitiesAboveBlock(hitBlock, entities) {
+  checkEntitiesAboveBlock(hitBlock, entities, playerHeight) {
     const blockTop = hitBlock.y;
     const blockLeft = hitBlock.x;
     const blockRight = hitBlock.x + hitBlock.width;
-    const alignmentTolerance = 10; // Adjust this tolerance as needed
+    const alignmentTolerance = 10;
+    const heightTolerance = TILE_SIZE - 1; // Range within the player's height
 
     entities.forEach(entity => {
-      // Only check things above the block
+      // Calculate the bottom of the entity and its center X
       const entityBottom = entity.y + entity.height;
       const entityCenterX = entity.x + entity.width / 2;
 
-      const isAbove = entityBottom <= blockTop;
+      // Check if the entity is within the height range of the player (playerHeight +/- TILE_SIZE * 2)
+      const isVerticallyWithinRange = entityBottom >= blockTop - heightTolerance && entityBottom <= blockTop + heightTolerance;
 
       // Allow horizontal alignment with some tolerance
       const isHorizontallyAligned =
         (entityCenterX >= blockLeft - alignmentTolerance && entityCenterX <= blockRight + alignmentTolerance);
 
-      if (isAbove && isHorizontallyAligned) {
+      // If the entity is within the vertical range and horizontally aligned
+      if (isVerticallyWithinRange && isHorizontallyAligned) {
         if (entity.dead) entity.dead(new Shell());
       }
     });
   }
 
+
   drawDebug(ctx, entity) {
     if (!ctx || !entity || !blocks) return;
 
-    // Show smaller hitbox
+    const toleranceX = entity.toleranceX || 0;
+    const toleranceY = entity.toleranceY || 0; // Corrected here
+
+// Show smaller hitbox
     const bounds = this.getEntityBounds(entity, true);
     ctx.strokeStyle = "red";
     ctx.lineWidth = 2;
-    ctx.strokeRect(bounds.left, entity.y, bounds.right - bounds.left, entity.height);
+    ctx.strokeRect(
+      bounds.left + toleranceX,
+      entity.y + toleranceY,
+      bounds.right - bounds.left - 2 * toleranceX, // Corrected here to subtract tolerance on both sides of the X axis
+      entity.height - 2 * toleranceY // Corrected here to subtract tolerance on both sides of the Y axis
+    );
+
 
     blocks.forEach(block => {
       if (!block?.solid) return;

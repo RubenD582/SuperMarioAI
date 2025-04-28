@@ -35,13 +35,13 @@ export const imageList = [
   { id: 'mystery', url: mystery, w: 32, h: 32, solid: true, layer: 2 },
   { id: 'brick', url: brick, w: 32, h: 32, solid: true, layer: 2 },
   { id: 'hard', url: hard, w: 32, h: 32, solid: true, layer: 2 },
-  { id: 'pipeTop', url: pipeTop, w: 64, h: 32, solid: true, layer: 2 },
-  { id: 'pipeBottom', url: pipeBottom, w: 64, h: 32, solid: true, layer: 2 },
+  { id: 'pipeTop', url: pipeTop, w: 64, h: 32, solid: true, layer: 4 },
+  { id: 'pipeBottom', url: pipeBottom, w: 64, h: 32, solid: true, layer: 4 },
   { id: 'underground', url: underground, w: 32, h: 32, solid: true, layer: 2 },
   { id: 'undergroundBrick', url: undergroundBrick, w: 32, h: 32, solid: true, layer: 2 },
   { id: 'hardBlockUnderground', url: hardBlockUnderground, w: 32, h: 32, solid: true, layer: 2 },
   { id: 'platform', url: platform, w: 96, h: 32, solid: true, layer: 2 },
-  { id: 'pipeConnection', url: pipeConnection, w: 128, h: 64, solid: true, layer: 2 },
+  { id: 'pipeConnection', url: pipeConnection, w: 128, h: 64, solid: true, layer: 4 },
 
   // BACKGROUND ITEMS - Layer 0
   { id: 'hill1', url: hill1, w: 160, h: 96, solid: false, layer: 0 },
@@ -52,6 +52,7 @@ export const imageList = [
   { id: 'bush1', url: bush1, w: 96, h: 32, solid: false, layer: 0 },
   { id: 'bush2', url: bush2, w: 128, h: 32, solid: false, layer: 0 },
   { id: 'bush3', url: bush3, w: 160, h: 32, solid: false, layer: 0 },
+  { id: 'coinUnderground', url: coinUnderground, w: 32, h: 32, solid: false, layer: 0 },
 
   // FOREGROUND ITEMS - Layer 3
   { id: 'castle', url: castle, w: 160, h: 160, solid: false, layer: 3 },

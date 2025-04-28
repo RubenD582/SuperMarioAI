@@ -21,10 +21,10 @@ export default class Fireball extends Entity {
 
     // Add player x velocity, for when a player is running and throwing the fireball
     // so player velocity and fireball velocity
-    this.vx = vx + (direction === 'right' ? 360 : -360);
-    this.vy = 500;
-    this.gravity = 1000;
-    this.bouncePower = -200;
+    this.vx = vx + (direction === 'right' ? 440 : -440);
+    this.vy = 350;
+    this.gravity = 1800;
+    this.bouncePower = -300;
     this.maxBounces = 4;
     this.bounces = 0;
     this.collision = collision;

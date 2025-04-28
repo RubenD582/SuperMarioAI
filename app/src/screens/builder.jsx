@@ -38,6 +38,7 @@ const BLOCK_OPTIONS = {
   pipe: [
     { label: 'Plant', value: 'plant' },
     { label: 'Level', value: 'level' },
+    { label: 'Plant & Level', value: 'plant_level' },
   ],
   pipeConnection: [],
   platform: [
@@ -228,8 +229,6 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
       break;
   }
 
-  console.log(`${blockType} === 'brick' && ${contentType}`);
-
   return (
     <div className="p-2 bg-neutral-800 text-sm rounded shadow">
       <h3 className={`font-bold ${options.length === 0 ? `mb-10` : `mb-2`}`}>{title}</h3>
@@ -246,7 +245,7 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
         ))}
       </select> : null}
 
-      {blockType === 'brick' && contentType === 'coin' && (
+      {(blockType === 'brick' || blockType === 'undergroundBrick') && contentType === 'coin' && (
         <div className="mt-2">
           <label className="block text-sm mb-1">Coin Count:</label>
           <input
@@ -268,6 +267,18 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
             className="w-full text-black p-1 rounded"
             placeholder="e.g level_1-1a"
             onChange={(e) => updateBlockContent('pipeTop', 'level', e.target.value)}
+          />
+        </div>
+      )}
+
+      {blockType === 'pipe' && contentType === 'plant_level' && (
+        <div className="mt-2">
+          <label className="block text-sm mb-1">Load JSON Level:</label>
+          <input
+            type="text"
+            className="w-full text-black p-1 rounded"
+            placeholder="e.g level_1-1a"
+            onChange={(e) => updateBlockContent('pipeTop', 'plant_level', e.target.value)}
           />
         </div>
       )}
@@ -336,6 +347,7 @@ const LevelBuilder = ({ onBack }) => {
   const [rulerEnd, setRulerEnd] = useState(null);
   const [gridWidth, setGridWidth] = useState(levelData[0].length);
   const [placementMode, setPlacementMode] = useState(false);
+  const [fileName, setFileName] = useState('mario-level.json');
 
   const gridRef = useRef(null);
   const containerRef = useRef(null);
@@ -348,7 +360,6 @@ const LevelBuilder = ({ onBack }) => {
 
   // Update block content (mystery, brick, pipe)
   const updateBlockContent = useCallback((blockType, contentType, customValue = null) => {
-    console.log(customValue);
     if (!selectedBlockPosition) return;
 
     const { row, col } = selectedBlockPosition;
@@ -368,7 +379,8 @@ const LevelBuilder = ({ onBack }) => {
             ...(contentType === 'custom' && customValue ? { customItemId: customValue } : {}),
             ...(contentType === 'coin' && customValue ? { quantity: customValue } : {}),
             ...(contentType === 'level' && customValue ? { level: customValue } : {}),
-            ...(contentType === 'spawn' && customValue ? { data: customValue } : {})
+            ...(contentType === 'spawn' && customValue ? { data: customValue } : {}),
+            ...(contentType === 'plant_level' && customValue ? { level: customValue } : {})
           }
         };
       } else if (typeof currentTile === 'string') {
@@ -380,7 +392,8 @@ const LevelBuilder = ({ onBack }) => {
             ...(contentType === 'custom' && customValue ? { customItemId: customValue } : {}),
             ...(contentType === 'coin' && customValue ? { quantity: customValue } : {}),
             ...(contentType === 'level' && customValue ? { level: customValue } : {}),
-            ...(contentType === 'spawn' && customValue ? { data: customValue } : {})
+            ...(contentType === 'spawn' && customValue ? { data: customValue } : {}),
+            ...(contentType === 'plant_level' && customValue ? { level: customValue } : {})
           }
         };
       }
@@ -483,7 +496,7 @@ const LevelBuilder = ({ onBack }) => {
 
     try {
       const fileHandle = await window.showSaveFilePicker({
-        suggestedName: 'mario-level.json',
+        suggestedName: fileName,
         types: [{
           description: 'JSON Files',
           accept: {'application/json': ['.json']},
@@ -502,6 +515,8 @@ const LevelBuilder = ({ onBack }) => {
   const importLevel = useCallback((event) => {
     const file = event.target.files[0];
     if (!file) return;
+
+    setFileName(file.name);
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -726,6 +741,14 @@ const LevelBuilder = ({ onBack }) => {
         </div>
 
         <div className="flex-1 flex flex-col" ref={containerRef}>
+
+          <input
+            id="fileName"
+            type="text"
+            className="w-full text-white p-1 rounded bg-black border-none focus:outline-none focus:ring-0"
+            placeholder={fileName}
+          />
+
           <div
             className="relative flex-1 overflow-hidden flex items-center"
             ref={gridRef}

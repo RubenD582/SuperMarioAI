@@ -19,12 +19,44 @@ import PipeTop from "../Blocks/pipeTop.jsx";
 import PiranhaPlant from "../entities/piranhaPlant.jsx";
 import Platform from "../Blocks/platform.jsx";
 import PipeConnection from "../Blocks/pipeConnection.jsx";
+import { v4 as uuidv4 } from 'uuid';
+import Flagpole from "../entities/flagpole.jsx";
 
+const FIRST_LEVEL = "1-2/level_1-2a.json";
+
+export let scores = [];
 export let blocks = [];
 export let mapType = 'overworld';
 export let mapHeight = null;
 export let mapWidth = null;
 export let playerX = null;
+
+const readGamepadInput = () => {
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const gp = gamepads[0]; // First controller
+
+  if (!gp) return null;
+
+  return {
+    left: gp.axes[0] < -0.5,
+    right: gp.axes[0] > 0.5,
+    up: gp.axes[1] < -0.5,
+    down: gp.axes[1] > 0.5,
+    xButton: gp.buttons[0].pressed, // X button (button 0)
+    circleButton: gp.buttons[1].pressed, // Circle
+    squareButton: gp.buttons[2].pressed, // Square
+    triangleButton: gp.buttons[3].pressed, // Triangle
+
+    // D-pad buttons
+    dUp: gp.buttons[12].pressed, // D-Pad Up
+    dDown: gp.buttons[13].pressed, // D-Pad Down
+    dLeft: gp.buttons[14].pressed, // D-Pad Left
+    dRight: gp.buttons[15].pressed, // D-Pad Right
+
+    rightTrigger: gp.buttons[7].pressed,
+  };
+};
+
 
 const preloadedImagesPromise = (function () {
   const loadedImages = {};
@@ -93,7 +125,7 @@ const GameContent = () => {
 
       // Load initial level if no level is loaded yet
       if (!levelData) {
-        changeLevel("1-1");
+        changeLevel(FIRST_LEVEL);
       }
     });
 
@@ -148,151 +180,174 @@ const GameContent = () => {
     const startY = (mapType === "underground" ? TILE_SIZE * 2 : TILE_SIZE * 10);
 
     for (let i = 0; i < population; i++) {
-      console.log(`NEW PLAYER`);
-      currPlayers.push(
-        new Player(
-          startX,
-          startY,
-          collisionRef.current,
-          addItemCallback
-        )
+      const player = new Player(
+        startX,
+        startY,
+        collisionRef.current,
+        addItemCallback
       );
+
+      currPlayers.push(player);
     }
 
     setPlayers(currPlayers);
   };
 
   const generateBlocksFromMap = useMemo(() => (mapData, loadedSprites) => {
+    if (!mapData || !loadedSprites) {
+      return [];
+    }
+
+    // Factory function to create block instances based on type
+    const createBlock = (type, x, y, sprite, blockContent, blockContentQuantity, layer) => {
+      // Common properties for all blocks
+      const props = {
+        x: x * TILE_SIZE,
+        y: y * TILE_SIZE,
+        width: sprite.w || TILE_SIZE,
+        height: sprite.h || TILE_SIZE,
+        image: sprite.image,
+        collision: collisionRef.current,
+        solid: sprite.solid || false,
+        content: blockContent,
+        layer
+      };
+
+      // Create specific block types based on id
+      switch (type) {
+        case "mystery":
+          return new MysteryBlock(
+            props.x, props.y, props.width, props.height, props.image,
+            props.solid, props.content, blockContentQuantity, props.collision, props.layer
+          );
+        case "pipeConnection":
+          return new PipeConnection(
+            props.x, props.y, props.width, props.height, props.image,
+            props.collision, props.solid, props.content, props.layer
+          );
+        case "platform":
+          return new Platform(
+            props.x, props.y, props.width, props.height, props.image,
+            props.collision, props.solid, props.content, props.layer
+          );
+        case "pipeTop":
+          const plantID = `plant_${uuidv4()}`;
+
+          // Handle piranha plant if needed
+          if (blockContent && (blockContent.type === "plant" || blockContent.type === "plant_level")) {
+            const piranhaPlant = new PiranhaPlant(
+              props.x, props.y, props.collision, plantID, props.layer
+            );
+            addItemCallback(piranhaPlant);
+          }
+          return new PipeTop(
+            props.x, props.y, props.width, props.height, props.image,
+            props.collision, props.solid, props.content, plantID, props.layer
+          );
+        case "pipe":
+          // Handle pipe with level transition
+          return new Block(
+            props.x, props.y, props.width, props.height, type,
+            props.image, props.solid, props.content, blockContentQuantity,
+            props.collision, props.layer
+          );
+        case "flagPole":
+          const flagpole = new Flagpole(
+            props.x, props.y, props.width, props.height, props.image,
+            props.collision, props.solid, props.layer
+          );
+
+          flagpole.changeHitboxSize(10);
+
+          addItemCallback(flagpole);
+          return;
+        default:
+          // Default block type
+          return new Block(
+            props.x, props.y, props.width, props.height, type,
+            props.image, props.solid, props.content, blockContentQuantity,
+            props.collision, props.layer
+          );
+      }
+    };
+
+    // Handle enemy creation
+    const createEnemy = (type, x, y, layer) => {
+      const xPos = x * TILE_SIZE;
+      const yPos = y * TILE_SIZE;
+
+      switch (type) {
+        case "goomba":
+          return new Goomba(xPos, yPos, collisionRef.current, layer);
+        case "koopa":
+        case "koopaRed":
+          return new Koopa(
+            xPos, yPos, collisionRef.current, addItemCallback,
+            type === "koopaRed", layer
+          );
+        default:
+          return null;
+      }
+    };
+
+    // Process the map data
     return mapData.flatMap((row, rowIndex) =>
       row.map((tileId, colIndex) => {
         if (tileId == null) return null;
 
-        let sprite;
-        let blockContent = null;
-        let blockContentQuantity = 1;
-        if (tileId.id) {
-          sprite = loadedSprites[tileId.id];
-          blockContent = tileId.content;
-          blockContentQuantity = tileId.content?.quantity || 1;
+        let sprite, blockContent = null, blockContentQuantity = 1;
+        let type = null;
+
+        // Handle object vs direct ID
+        if (typeof tileId === 'object') {
+          // Handle object notation (tileId is an object with id, content, etc.)
+          if (tileId.id) {
+            type = tileId.id;
+            sprite = loadedSprites[tileId.id];
+            blockContent = tileId.content || null;
+            blockContentQuantity = tileId.content?.quantity || 1;
+          } else {
+            // If no id but still an object, might be a direct sprite reference
+            sprite = loadedSprites[tileId];
+            type = tileId;
+          }
         } else {
+          // Handle string/number ID (direct reference)
           sprite = loadedSprites[tileId];
+          type = tileId;
         }
 
-        if (sprite === undefined || sprite === null) return null;
+        // Handle missing sprites
+        if (!sprite) {
+          console.warn(`Sprite not found for tile ID: ${JSON.stringify(tileId)} at [${rowIndex}, ${colIndex}]`);
+          return null;
+        }
 
         const layer = sprite.layer || 0;
 
-        if (tileId.id === "mystery") {
-          return new MysteryBlock(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            sprite.w || TILE_SIZE,
-            sprite.h || TILE_SIZE,
-            sprite.image,
-            collisionRef.current,
-            sprite.solid || false,
-            blockContent,
-            layer
-          );
-        } else if (tileId.id === "pipeConnection") {
-          return new PipeConnection(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            sprite.w || TILE_SIZE,
-            sprite.h || TILE_SIZE,
-            sprite.image,
-            collisionRef.current,
-            sprite.solid || false,
-            blockContent,
-            layer
-          );
-        } else if (tileId.id === "platform") {
-          return new Platform(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            sprite.w || TILE_SIZE,
-            sprite.h || TILE_SIZE,
-            sprite.image,
-            collisionRef.current,
-            sprite.solid || false,
-            blockContent,
-            layer
-          );
-        } else if (tileId.id === "pipeTop") {
-          if (blockContent && blockContent.type === "plant") {
-            const piranhaPlant = new PiranhaPlant(
-              colIndex * TILE_SIZE,
-              rowIndex * TILE_SIZE,
-              collisionRef.current,
-              layer
-            );
+        // Handle enemies (create and add to game)
+        if (type === "goomba" || type === "koopa" || type === "koopaRed") {
+          const enemy = createEnemy(type, colIndex, rowIndex, layer);
 
-            addItemCallback(piranhaPlant);
+          if (enemy) {
+            addItemCallback(enemy);
           }
-
-          return new PipeTop(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            sprite.w || TILE_SIZE,
-            sprite.h || TILE_SIZE,
-            sprite.image,
-            collisionRef.current,
-            sprite.solid || false,
-            blockContent
-          );
-        } else if (tileId === "goomba") {
-          const goomba = new Goomba(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            collisionRef.current,
-            layer
-          );
-
-          addItemCallback(goomba);
-        } else if (tileId === "koopa" || tileId === "koopaRed") {
-          const koopa = new Koopa(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            collisionRef.current,
-            addItemCallback,
-            tileId === "koopaRed",
-            layer
-          );
-
-          addItemCallback(koopa);
-        } else if (tileId.id === "pipe") {
-          // Handle pipe with level transition
-          return new Block(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            sprite.w || TILE_SIZE,
-            sprite.h || TILE_SIZE,
-            tileId,
-            sprite.image,
-            sprite.solid || false,
-            blockContent,
-            blockContentQuantity,
-            collisionRef.current,
-            layer
-          );
-        } else {
-          return new Block(
-            colIndex * TILE_SIZE,
-            rowIndex * TILE_SIZE,
-            sprite.w || TILE_SIZE,
-            sprite.h || TILE_SIZE,
-            tileId,
-            sprite.image,
-            sprite.solid || false,
-            blockContent,
-            blockContentQuantity,
-            collisionRef.current,
-            layer
-          );
+          return null; // Enemies are added via callback, not returned
         }
+
+        // Create appropriate block type
+        return createBlock(
+          type,
+          colIndex,
+          rowIndex,
+          sprite,
+          blockContent,
+          blockContentQuantity,
+          layer
+        );
       }).filter(Boolean) // Remove nulls
     );
-  }, []);
+  }, [collisionRef, addItemCallback]); // Added dependencies
 
   useEffect(() => {
     const gameLoop = createGameLoop({
@@ -339,12 +394,35 @@ const GameContent = () => {
           }
 
           if (players && players.length > 0) {
+            const gamepadState = readGamepadInput();
+
             players.forEach((player) => {
+              if (gamepadState) {
+                // Map gamepad buttons to player keys
+                player.keys.left = gamepadState.left || gamepadState.dLeft;
+                player.keys.right = gamepadState.right || gamepadState.dRight;
+                player.keys.up = gamepadState.xButton || gamepadState.dUp;
+                player.keys.down = gamepadState.down || gamepadState.dDown;
+                player.keys.b = gamepadState.circleButton || gamepadState.rightTrigger;
+              }
+
               player.update?.(delta, entities);
               player.animate?.(delta);
 
               playerX = player.x;
             });
+          }
+
+          if (scores && scores.length > 0) {
+            scores.forEach((score) => {
+              score.update(delta)
+            });
+
+            for (let i = scores.length - 1; i >= 0; i--) {
+              if (scores[i].remove) {
+                scores.splice(i, 1);
+              }
+            }
           }
         }
 

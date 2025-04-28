@@ -1,5 +1,4 @@
 {
-  "mapType": "underground",
   "backgroundColor": "#000000",
   "map": [
     [
@@ -219,9 +218,9 @@
         "content": {
           "type": "spawn",
           "data": {
-            "level": "level_1-1",
+            "level": "1-1/level_1-1a",
             "x": "164",
-            "y": "10"
+            "y": "11"
           }
         }
       },

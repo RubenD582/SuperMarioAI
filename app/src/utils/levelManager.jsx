@@ -1,5 +1,8 @@
 import { createContext, useContext, useState } from 'react';
 
+// Auto-import all level JSON files
+const levelModules = import.meta.glob('../assets/levels/**/*.json');
+
 // Create a context to hold level state and functions
 const LevelContext = createContext(undefined);
 
@@ -10,9 +13,16 @@ export const LevelProvider = ({ children }) => {
   // Function to change the level
   const changeLevel = async (levelId) => {
     try {
-      console.log(`Loading level: ${levelId}`);
-      
-      const level = await import(`../assets/levels/level_${levelId}.json`);
+      levelId = levelId.replace('.json', '');
+      const path = `../assets/levels/${levelId}.json`;
+      console.log(`Loading level: ${path}`);
+
+      const loader = levelModules[path];
+      if (!loader) {
+        throw new Error(`Level ${levelId} not found.`);
+      }
+
+      const level = await loader();
       setLevelData(level.default || level);
       setCurrentLevel(levelId);
       return true;

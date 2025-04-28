@@ -4,7 +4,7 @@ import Block from './block.jsx';
 export let PipeFrames = [Pipe];
 
 export default class PipeTop extends Block {
-  constructor(x, y, width, height, image, collision, solid = true, content = null, layer = 0) {
+  constructor(x, y, width, height, image, collision, solid = true, content = null, plantID = null, layer = 4) {
     super(x, y, width, height, "pipeTop", image, solid, content, layer);
 
     this.collision = collision;
@@ -13,6 +13,7 @@ export default class PipeTop extends Block {
     this.blockFrameIndex = 0;
     this.frameTime = 0;
     this.frameDuration = 0.175;
+    this.plantID = plantID;
     this.animations = {
       none: [],
     };
