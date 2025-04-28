@@ -1,12 +1,14 @@
 import {MAX_RUN, MAX_WALK} from "../constants/physicsConstants.jsx";
 
 export default class Entity {
-  constructor(x, y, width, height, imageHeight = null) {
+  constructor(x, y, width, height, imageHeight = null, layer = 2) {
     this.y = y;
     this.x = x;
 
     this.vx = 0;
     this.vy = 0;
+
+    this.layer = layer;
 
     this.width = width;
     this.height = height;
@@ -16,10 +18,13 @@ export default class Entity {
     this.currentFrames = [];
     this.currentFrame = 0;
     this.frameTime = 0;
-    this.frameDuration = 0.2;
     this.imageHeight = imageHeight;
 
     this.start = false;
+    this.toleranceTop    = 0;
+    this.toleranceRight  = 0;
+    this.toleranceBottom = 0;
+    this.toleranceLeft   = 0;
   }
 
   // Call this when animation changes
@@ -71,14 +76,18 @@ export default class Entity {
     ctx.restore();
   }
 
-  drawBoundingBox(ctx) {
-    ctx.save();
-    ctx.strokeStyle = 'red';
-    ctx.strokeRect(this.x, this.y, this.width, this.height);
-    ctx.restore();
-  }
-
   map(x, inMin, inMax, outMin, outMax) {
     return ((x - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
+  }
+
+  setImageHeight(height) {
+    this.imageHeight = height;
+  }
+
+  changeHitboxSize(top, right, bottom, left) {
+    this.toleranceTop    = top;
+    this.toleranceRight  = right;
+    this.toleranceBottom = bottom;
+    this.toleranceLeft   = left;
   }
 }

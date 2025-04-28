@@ -15,9 +15,11 @@ import Starman3 from '../assets/Sprites/Starman3.png';
 import Starman4 from '../assets/Sprites/Starman4.png';
 
 import { TILE_SIZE } from '../constants/constants.jsx';
+import {scores} from "../screens/game.jsx";
+import Score from "../utils/score.jsx";
 
 export default class Item {
-  constructor(x, y, itemType) {
+  constructor(x, y, itemType, layer = 0, score = 0) {
     this.x = x;
     this.y = y;
     this.itemType = itemType;
@@ -28,6 +30,8 @@ export default class Item {
     this.itemFrameTime = 0;
     this.itemFrameDuration = 0.0;
     this.itemAnimations = this.loadItemAnimations();
+    this.layer = layer;
+    this.score = score;
   }
 
   loadItemAnimations() {
@@ -91,6 +95,7 @@ export default class Item {
   }
 
   collect() {
+    scores.push(new Score(this.x + this.width / 2, this.y, this.score));
     this.isCollected = true;
   }
 }
@@ -102,6 +107,7 @@ export class Flower extends Item {
     this.isMoving = true;
     this.blockY = y;
     this.itemFrameDuration = 0.3;
+    this.score = 1000;
   }
 
   animate(deltaTime) {
@@ -129,9 +135,9 @@ export class Mushroom extends Item {
     this.gravity = 1000;
     this.grounded = false;
     this.collision = collision;
-
     this.isMoving = true;
     this.blockY = y;
+    this.score = 1000;
   }
 
   animate(deltaTime) {
@@ -171,6 +177,7 @@ export class Coin extends Item {
 
     // Much faster coin spinning animation - lower value means faster animation
     this.itemFrameDuration = 0.1;
+    this.score = 10;
   }
 
   animate(deltaTime) {
@@ -207,25 +214,19 @@ export class Starman extends Item {
     super(x, y + TILE_SIZE - TILE_SIZE * 0.16, 'starman');
 
     this.blocksPerJump = 6;
-
     this.dy = -25;
     this.isMoving = true;
     this.blockY = y;
-
     this.gravity = 100;
     this.bounceHeight = -110;
-
     const timePerJump = 2 * (Math.abs(this.bounceHeight) / this.gravity) * 1.5;
-
     this.vx = (this.blocksPerJump * TILE_SIZE) / timePerJump;
-
     this.directionX = 1;
     this.vy = 0;
     this.grounded = false;
-
     this.collision = collision;
-
     this.itemFrameDuration = 0.2;
+    this.score = 1000;
   }
 
   animate(deltaTime) {

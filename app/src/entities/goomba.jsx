@@ -1,5 +1,6 @@
 import Entity from './Entity';
 import Shell from './Shell';
+import Player from './Player';
 
 import Goomba1 from '../assets/Sprites/Goomba_Walk1.png';
 import Goomba2 from '../assets/Sprites/Goomba_Walk2.png';
@@ -10,7 +11,8 @@ import GoombaUnderground2 from '../assets/Sprites/Goomba_Walk_underground2.png';
 import GoombaFlatUnderground from '../assets/Sprites/Goomba_Flat_underground.png';
 
 import Fireball from "./fireball.jsx";
-import {mapType} from "../screens/game.jsx";
+import {mapType, scores} from "../screens/game.jsx";
+import Score from "../utils/score.jsx";
 
 export let GoombaFrames  = [Goomba1, Goomba2];
 export let GoombaFlatFrames = [GoombaFlat];
@@ -22,29 +24,22 @@ export default class Goomba extends Entity {
     this.collision = collision;
     this.vx = -50;
     this.vy = 0;
-
     this.grounded = true;
     this.isDead = false;
-
     this.gravity = 1000;
-
     this.keys = { left: false, right: false, up: false, down: false, b: false };
-
     this.direction = 'left';
-
     this.currentAnimation = 'walk';
     this.animations = {};
-
     this.remove = false;
     this.deathTimer = 0;
-
-    this.killedByFireball = false;
+    this.animateFlip = false;
     this.flipY = false;
-
     if (mapType === 'underground') {
       GoombaFrames  = [GoombaUnderground1, GoombaUnderground2];
       GoombaFlatFrames = [GoombaFlatUnderground];
     }
+    this.score = 100;
     this.preloadAnimations();
   }
 
@@ -93,12 +88,10 @@ export default class Goomba extends Entity {
         this.collision.checkVerticalCollisions(this);
 
         entities.forEach(entity => {
-          // Skip self-collision
           if (entity === this) return;
 
           if (this.checkCollision(entity) && this.collisionCooldown <= 0) {
-            // Set cooldown to prevent immediate re-collision
-            this.collisionCooldown = 0.5; // Half a second cooldown
+            this.collisionCooldown = 0.5;
 
             // Determine which side of the collision occurred to push appropriately
             const overlapX = Math.min(
@@ -106,16 +99,11 @@ export default class Goomba extends Entity {
               entity.x + entity.width - this.x
             );
 
-            // Push away from the other entity
             if (this.x < entity.x) {
-              // This entity is on the left
               this.x -= overlapX / 2;
-              // Ensure we're not pushing it into a wall
               this.collision.checkHorizontalCollisions(this);
             } else {
-              // This entity is on the right
               this.x += overlapX / 2;
-              // Ensure we're not pushing it into a wall
               this.collision.checkHorizontalCollisions(this);
             }
 
@@ -123,10 +111,14 @@ export default class Goomba extends Entity {
             this.vx = -this.vx;
 
             // Handle special collision cases
-            if (entity instanceof Fireball || entity instanceof Shell) {
+            if (entity instanceof Fireball) {
               entity.explode = true;
               this.dead(entity);
-            } else if (entity instanceof Shell && !entity.hasOwnProperty('explode')) {
+            } else if (
+              entity instanceof Shell &&
+              Math.abs(entity.vx) > 0 &&
+              !entity.hasOwnProperty('explode')
+            ) {
               this.dead(entity);
             }
           }
@@ -136,7 +128,7 @@ export default class Goomba extends Entity {
         if (this.vx > 0) this.facing = "left";
       } else {
         // If the Goomba is dead, check the timer
-        if (this.killedByFireball) {
+        if (this.animateFlip) {
           this.y += this.vy * delta;
           this.vy += this.gravity * delta;
 
@@ -146,7 +138,7 @@ export default class Goomba extends Entity {
           }
         }
 
-        if (!this.killedByFireball) {
+        if (!this.animateFlip) {
           if (this.deathTimer < 0.1) {
             this.deathTimer += delta;
           } else {
@@ -156,7 +148,6 @@ export default class Goomba extends Entity {
       }
     }
   }
-
 
   checkCollision(other) {
     return (
@@ -168,9 +159,9 @@ export default class Goomba extends Entity {
   }
 
   dead(object) {
-    if (object instanceof Fireball || object instanceof Shell) {
+    if (object instanceof Fireball || object instanceof Shell || (object instanceof Player && object.starmanMode)) {
       this.isDead = true;
-      this.killedByFireball = true;
+      this.animateFlip = true;
       this.flipY = true;
       this.vx = 0;
       this.vy = -300;
@@ -181,6 +172,7 @@ export default class Goomba extends Entity {
       this.deathTimer = 0;
       this.vx = 0;
     }
-  }
 
+    scores.push(new Score(this.x + this.width / 2, this.y, this.score));
+  }
 }

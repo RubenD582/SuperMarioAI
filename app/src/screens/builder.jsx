@@ -8,7 +8,7 @@ const tileById = imageList.reduce((acc, tile) => {
 }, {});
 
 const TILE_SIZE = 32;
-const GRID_WIDTH = 192;
+const GRID_WIDTH = 16;
 const GRID_HEIGHT = 16;
 
 // Item options for different block types
@@ -27,10 +27,20 @@ const BLOCK_OPTIONS = {
     { label: 'Mushroom', value: 'mushroom' },
     { label: '1-Up', value: '1up' },
   ],
+  undergroundBrick: [
+    { label: 'Auto: Mushroom or Fire Flower', value: 'auto' },
+    { label: 'Coin', value: 'coin' },
+    { label: 'Star', value: 'star' },
+    { label: 'Flower', value: 'flower' },
+    { label: 'Mushroom', value: 'mushroom' },
+    { label: '1-Up', value: '1up' },
+  ],
   pipe: [
     { label: 'Plant', value: 'plant' },
     { label: 'Level', value: 'level' },
+    { label: 'Plant & Level', value: 'plant_level' },
   ],
+  pipeConnection: [],
   platform: [
     { label: 'Up', value: 'up' },
     { label: 'Down', value: 'down' },
@@ -41,15 +51,15 @@ const BLOCK_OPTIONS = {
 
 // Memoized Tile component
 const Tile = memo(({
-                     rowIndex,
-                     colIndex,
-                     tileId,
-                     onMouseDown,
-                     onMouseEnter,
-                     onMouseUp,
-                     showCoordinates,
-                     onTileClick
-                   }) => {
+  rowIndex,
+  colIndex,
+  tileId,
+  onMouseDown,
+  onMouseEnter,
+  onMouseUp,
+  showCoordinates,
+  onTileClick
+}) => {
   // Handle both string-based and object-based tile IDs
   const getTileInfo = (tileId) => {
     if (!tileId) return null;
@@ -166,13 +176,13 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
   if (!selectedBlock) return null;
 
   const getBlockType = () => {
-    console.log(selectedBlock);
     if (typeof selectedBlock === 'string') {
       if (selectedBlock === 'mystery') return 'mystery';
       if (selectedBlock === 'brick') return 'brick';
       if (selectedBlock === 'undergroundBrick') return 'undergroundBrick';
       if (selectedBlock === 'pipeTop') return 'pipe';
       if (selectedBlock === 'platform') return 'platform';
+      if (selectedBlock === 'pipeConnection') return 'pipeConnection';
       return null;
     }
 
@@ -182,13 +192,13 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
       if (selectedBlock.id === 'undergroundBrick') return 'undergroundBrick';
       if (selectedBlock.id === 'pipeTop') return 'pipe';
       if (selectedBlock.id === 'platform') return 'platform';
+      if (selectedBlock === 'pipeConnection') return 'pipeConnection';
     }
 
     return null;
   };
 
   const blockType = getBlockType();
-  console.log(`blockType: ${blockType}`);
   if (!blockType) return null;
 
   const getContentType = () => {
@@ -200,16 +210,19 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
   let title = '';
   switch (blockType) {
     case 'mystery':
-      title = 'Mystery Block Settings';
+      title = 'MYSTERY BLOCK SETTINGS';
       break;
     case 'brick':
-      title = 'Brick Block Settings';
+      title = 'BRICK BLOCK SETTINGS';
       break;
     case 'pipeTop':
-      title = 'Pipe Settings';
+      title = 'PIPE SETTINGS';
       break;
     case 'platform':
-      title = 'Platform Direction';
+      title = 'PLATFORM DIRECTION';
+      break;
+    case 'pipeConnection':
+      title = 'SET EXIT LOCATION';
       break;
     default:
       title = 'Block Settings';
@@ -218,8 +231,8 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
 
   return (
     <div className="p-2 bg-neutral-800 text-sm rounded shadow">
-      <h3 className="font-bold mb-2">{title}</h3>
-      <select
+      <h3 className={`font-bold ${options.length === 0 ? `mb-10` : `mb-2`}`}>{title}</h3>
+      {options.length > 0 ? <select
         className="w-full text-black mb-2 p-1 rounded"
         value={contentType}
         onChange={(e) => updateBlockContent(blockType, e.target.value)}
@@ -230,9 +243,9 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
             {opt.label}
           </option>
         ))}
-      </select>
+      </select> : null}
 
-      {blockType === 'brick' && contentType === 'coin' && (
+      {(blockType === 'brick' || blockType === 'undergroundBrick') && contentType === 'coin' && (
         <div className="mt-2">
           <label className="block text-sm mb-1">Coin Count:</label>
           <input
@@ -245,6 +258,74 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
           />
         </div>
       )}
+
+      {blockType === 'pipe' && contentType === 'level' && (
+        <div className="mt-2">
+          <label className="block text-sm mb-1">Load JSON Level:</label>
+          <input
+            type="text"
+            className="w-full text-black p-1 rounded"
+            placeholder="e.g level_1-1a"
+            onChange={(e) => updateBlockContent('pipeTop', 'level', e.target.value)}
+          />
+        </div>
+      )}
+
+      {blockType === 'pipe' && contentType === 'plant_level' && (
+        <div className="mt-2">
+          <label className="block text-sm mb-1">Load JSON Level:</label>
+          <input
+            type="text"
+            className="w-full text-black p-1 rounded"
+            placeholder="e.g level_1-1a"
+            onChange={(e) => updateBlockContent('pipeTop', 'plant_level', e.target.value)}
+          />
+        </div>
+      )}
+
+      {blockType === 'pipeConnection' && (
+        <div className="mt-2">
+          <label className="block text-sm mb-1">Load JSON Level:</label>
+          <input
+            id="levelInput0"
+            type="text"
+            className="w-full text-black p-1 rounded mb-2"
+            placeholder="e.g level_1-1a"
+          />
+
+          <label className="block text-sm mb-1">Player spawn coordinates:</label>
+          <input
+            id="levelInput1"
+            type="number"
+            className="w-full text-black p-1 rounded mb-2"
+            placeholder="X"
+          />
+
+          <input
+            id="levelInput2"
+            type="number"
+            className="w-full text-black p-1 rounded mb-2"
+            placeholder="Y"
+          />
+
+          <button
+            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={() => {
+              const valueLevel = document.getElementById('levelInput0').value;
+              const valueX = document.getElementById('levelInput1').value;
+              const valueY = document.getElementById('levelInput2').value;
+              updateBlockContent('pipeConnection', 'spawn', {
+                level: valueLevel,
+                x: valueX,
+                y: valueY,
+              });
+            }}
+          >
+            SET
+          </button>
+        </div>
+      )}
+
     </div>
   );
 };
@@ -266,6 +347,7 @@ const LevelBuilder = ({ onBack }) => {
   const [rulerEnd, setRulerEnd] = useState(null);
   const [gridWidth, setGridWidth] = useState(levelData[0].length);
   const [placementMode, setPlacementMode] = useState(false);
+  const [fileName, setFileName] = useState('mario-level.json');
 
   const gridRef = useRef(null);
   const containerRef = useRef(null);
@@ -295,7 +377,10 @@ const LevelBuilder = ({ onBack }) => {
           content: contentType === 'none' ? null : {
             type: contentType,
             ...(contentType === 'custom' && customValue ? { customItemId: customValue } : {}),
-            ...(contentType === 'coin' && customValue ? { quantity: customValue } : {})
+            ...(contentType === 'coin' && customValue ? { quantity: customValue } : {}),
+            ...(contentType === 'level' && customValue ? { level: customValue } : {}),
+            ...(contentType === 'spawn' && customValue ? { data: customValue } : {}),
+            ...(contentType === 'plant_level' && customValue ? { level: customValue } : {})
           }
         };
       } else if (typeof currentTile === 'string') {
@@ -305,7 +390,10 @@ const LevelBuilder = ({ onBack }) => {
           content: contentType === 'none' ? null : {
             type: contentType,
             ...(contentType === 'custom' && customValue ? { customItemId: customValue } : {}),
-            ...(contentType === 'coin' && customValue ? { quantity: customValue } : {})
+            ...(contentType === 'coin' && customValue ? { quantity: customValue } : {}),
+            ...(contentType === 'level' && customValue ? { level: customValue } : {}),
+            ...(contentType === 'spawn' && customValue ? { data: customValue } : {}),
+            ...(contentType === 'plant_level' && customValue ? { level: customValue } : {})
           }
         };
       }
@@ -408,7 +496,7 @@ const LevelBuilder = ({ onBack }) => {
 
     try {
       const fileHandle = await window.showSaveFilePicker({
-        suggestedName: 'mario-level.json',
+        suggestedName: fileName,
         types: [{
           description: 'JSON Files',
           accept: {'application/json': ['.json']},
@@ -427,6 +515,8 @@ const LevelBuilder = ({ onBack }) => {
   const importLevel = useCallback((event) => {
     const file = event.target.files[0];
     if (!file) return;
+
+    setFileName(file.name);
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -509,7 +599,7 @@ const LevelBuilder = ({ onBack }) => {
       const tilesWide = imageSizeW / TILE_SIZE;
       const offset = Math.floor(tilesWide / 2);
       const centerCol = colIndex; //tilesWide % 2 === 1 ? (colIndex - offset) : colIndex;
-      const newRow = (rowIndex - (imageSizeH / TILE_SIZE - 1));
+      const newRow = rowIndex * 1; //(rowIndex - (imageSizeH / TILE_SIZE - 1));
 
       updateTile(newRow, centerCol);
     } else if (e.button === 1) {
@@ -558,6 +648,10 @@ const LevelBuilder = ({ onBack }) => {
       const y = e.clientY - rect.top;
       const col = Math.floor(x / TILE_SIZE);
       const row = Math.floor(y / TILE_SIZE);
+
+      if (e.clientX >= window.innerWidth - TILE_SIZE * 2) {
+        handleScrollPositionChange(scrollPosition + TILE_SIZE);
+      }
 
       setRulerEnd({ row, col });
     }
@@ -647,6 +741,14 @@ const LevelBuilder = ({ onBack }) => {
         </div>
 
         <div className="flex-1 flex flex-col" ref={containerRef}>
+
+          <input
+            id="fileName"
+            type="text"
+            className="w-full text-white p-1 rounded bg-black border-none focus:outline-none focus:ring-0"
+            placeholder={fileName}
+          />
+
           <div
             className="relative flex-1 overflow-hidden flex items-center"
             ref={gridRef}
@@ -674,7 +776,7 @@ const LevelBuilder = ({ onBack }) => {
                     top: `${Math.min(rulerStart.row, rulerEnd.row) * TILE_SIZE}px`,
                     width: `${(Math.abs(rulerEnd.col - rulerStart.col) + 1) * TILE_SIZE}px`,
                     height: `${(Math.abs(rulerEnd.row - rulerStart.row) + 1) * TILE_SIZE}px`,
-                    backgroundColor: 'rgba(255, 0, 128, 0.5)',
+                    backgroundColor: 'rgba(255, 0, 255, 0.5)',
                     border: '1px dashed #ff66b2',
                   }}
                 >
@@ -682,7 +784,7 @@ const LevelBuilder = ({ onBack }) => {
                     style={{
                       position: 'absolute',
                       top: 0,
-                      left: 0,
+                      right: 0,
                       background: '#000',
                       color: '#fff',
                       fontSize: '10px',

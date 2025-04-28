@@ -1542,9 +1542,9 @@
       null,
       null,
       null,
-      "pipeConnection",
       null,
       null,
+      "pipeBottom",
       null,
       "undergroundBrick",
       "undergroundBrick",
@@ -1757,7 +1757,17 @@
       null,
       null,
       null,
-      null,
+      {
+        "id": "pipeConnection",
+        "content": {
+          "type": "spawn",
+          "data": {
+            "level": "1-2/level_1-2d",
+            "x": "4",
+            "y": "11"
+          }
+        }
+      },
       null,
       null,
       null,
@@ -1822,7 +1832,7 @@
       {
         "id": "mystery",
         "content": {
-          "type": "coin"
+          "type": "auto"
         }
       },
       null,
@@ -2115,7 +2125,8 @@
       {
         "id": "pipeTop",
         "content": {
-          "type": "plant"
+          "type": "plant_level",
+          "level": "1-2/level_1-2c"
         }
       },
       null,

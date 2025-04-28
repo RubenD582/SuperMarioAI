@@ -6,21 +6,28 @@ import { Coin, Flower, Mushroom, Starman } from "./item.jsx";
 import EmptyBlock from '../assets/Sprites/EmptyBlock.png';
 
 export default class Block {
-  constructor(x, y, width, height, type, image, solid = false, content = null, contentQuantity = 1, collision = null) {
-    Object.assign(this, {
-      x, y, width, height, type, image, solid, content, collision,
-      originalY: y,
-      movingUp: false,
-      movingDown: false,
-      moveUpAmount: 0,
-      maxMoveUp: 10,
-      moveSpeed: 1,
-      broken: false,
-      fragments: [],
-      spawnedItem: null,
-      empty: false,
-      contentQuantity
-    });
+  constructor(x, y, width, height, type, image, solid = false, content = null, contentQuantity = 1, collision = null, layer = 0) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.type = type;
+    this.image = image;
+    this.solid = solid;
+    this.content = content;
+    this.collision = collision;
+    this.originalY = y;
+    this.movingUp = false;
+    this.movingDown = false;
+    this.moveUpAmount = 0;
+    this.maxMoveUp = 10;
+    this.moveSpeed = 1;
+    this.broken = false;
+    this.fragments = [];
+    this.spawnedItems = []; // <-- Changed to an array
+    this.empty = false;
+    this.contentQuantity = contentQuantity;
+    this.layer = layer;
   }
 
   setImage(image) {
@@ -34,12 +41,18 @@ export default class Block {
   }
 
   drawAllFragments(ctx) {
-    this.fragments.forEach(fragment => fragment.draw(ctx));
+    for (const fragment of this.fragments) {
+      fragment.draw(ctx);
+    }
   }
 
   updateAllFragments() {
-    this.fragments.forEach(fragment => fragment.update());
-    this.fragments = this.fragments.filter(f => f.y < 1000);
+    for (let i = this.fragments.length - 1; i >= 0; i--) {
+      this.fragments[i].update();
+      if (this.fragments[i].y >= 1000) {
+        this.fragments.splice(i, 1);
+      }
+    }
   }
 
   getBoundingBox() {
@@ -69,9 +82,12 @@ export default class Block {
       [-1.25, -1.5], [1.25, -1.5]
     ];
 
-    velocities.forEach(([vx, vy]) => {
-      this.fragments.push(new Fragment(centerX, centerY, vx, vy, size));
-    });
+    const fragImage = new Image();
+    fragImage.src = mapType === 'underground' ? fragmentUnderground : fragment;
+
+    for (const [vx, vy] of velocities) {
+      this.fragments.push(new Fragment(centerX, centerY, vx, vy, size, 0.1, fragImage));
+    }
   }
 
   update(deltaTime) {
@@ -95,11 +111,16 @@ export default class Block {
       }
     }
 
-    this.spawnedItem?.animate(deltaTime);
+    // Update all spawned items
+    if (this.spawnedItems.length > 0) {
+      for (const item of this.spawnedItems) {
+        item.animate(deltaTime);
+      }
+    }
   }
 
   spawnItem(addItemCallback, isBig) {
-    if (!this.content) return;
+    if (!this.content) return; // No content to spawn
 
     const spawnX = this.x + (this.width - TILE_SIZE) / 2;
     const spawnY = this.y - TILE_SIZE;
@@ -121,38 +142,52 @@ export default class Block {
       case 'star':
         item = new Starman(spawnX, spawnY, this.collision);
         break;
+      default:
+        return;
     }
 
-    if (item && addItemCallback) addItemCallback(item);
-    this.spawnedItem = item;
+    if (item && addItemCallback) {
+      addItemCallback(item);
+    }
+
+    this.spawnedItems.push(item); // Push into array
   }
 
   onBlockHit(addItemCallback, player) {
-    if (!this.empty) {
-      this.contentQuantity--;
-      if (this.contentQuantity === 0) {
-        const img = new Image();
-        img.src = EmptyBlock;
-        this.image = img;
-        this.empty = true;
-      }
+    if (this.empty || this.contentQuantity <= 0) return 0; // Nothing to do if empty
 
-      this.spawnItem(addItemCallback, player.isBigMario);
-      return 100;
+    this.spawnItem(addItemCallback, player.isBigMario);
+
+    this.contentQuantity--;
+
+    if (this.contentQuantity <= 0) {
+      const emptyImg = new Image();
+      emptyImg.src = EmptyBlock;
+      this.setImage(emptyImg);
+      this.empty = true;
     }
-    return 0;
+
+    return 100; // Score or points for hitting
   }
 }
 
 export class Fragment {
-  constructor(x, y, vx, vy, size = 8, gravity = 0.1) {
-    Object.assign(this, {
-      x, y, vx, vy, size, gravity,
-      rotation: Math.random() * 2 * Math.PI,
-      rotationSpeed: (Math.random() - 0.5) * 0.1,
-      image: new Image()
-    });
-    this.image.src = mapType === 'underground' ? fragmentUnderground : fragment;
+  constructor(x, y, vx, vy, size = 8, gravity = 0.1, image = null) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.size = size;
+    this.gravity = gravity;
+    this.rotation = Math.random() * 2 * Math.PI;
+    this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+
+    if (image) {
+      this.image = image;
+    } else {
+      this.image = new Image();
+      this.image.src = mapType === 'underground' ? fragmentUnderground : fragment;
+    }
   }
 
   update() {
