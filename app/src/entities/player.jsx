@@ -29,8 +29,9 @@ import Shell from "./shell.jsx";
 import PiranhaPlant from "./piranhaPlant.jsx";
 import {setLevel} from "../utils/levelManager.jsx";
 import Flagpole from "./flagpole.jsx";
-import {scores} from "../screens/game.jsx";
+import {mapWidth, scores} from "../screens/game.jsx";
 import Score from "../utils/score.jsx";
+import Flag from "./flag.jsx";
 
 // Dynamic import of all sprite assets
 const spriteImports = import.meta.glob('../assets/Sprites/0/*.png', { eager: true });
@@ -59,12 +60,14 @@ export const MarioSmallRunFrames   = [getSprite('Mario_Small_Run1'), getSprite('
 export const MarioSmallJumpFrames  = [getSprite('Mario_Small_Jump')];
 export const MarioSmallSlideFrames = [getSprite('Mario_Small_Slide')];
 export const MarioSmallDeathFrames = [getSprite('Mario_Small_Death')];
+export const MarioSmallClimbFrames = [getSprite('Mario_Small_Climb1'), getSprite('Mario_Small_Climb2')];
 
 export const MarioBigIdleFrames   = [getSprite('Mario_Big_Idle')];
 export const MarioBigRunFrames    = [getSprite('Mario_Big_Run1'), getSprite('Mario_Big_Run2'), getSprite('Mario_Big_Run3')];
 export const MarioBigJumpFrames   = [getSprite('Mario_Big_Jump')];
 export const MarioBigSlideFrames  = [getSprite('Mario_Big_Slide')];
 export const MarioBigCrouchFrames = [getSprite('Mario_Big_Crouch')];
+export const MarioBigClimbFrames = [getSprite('Mario_Big_Climb1'), getSprite('Mario_Big_Climb2')];
 
 export const MarioFireIdleFrames   = [getSprite('Mario_Fire_Idle')];
 export const MarioFireRunFrames    = [getSprite('Mario_Fire_Run1'), getSprite('Mario_Fire_Run2'), getSprite('Mario_Fire_Run3')];
@@ -72,6 +75,7 @@ export const MarioFireJumpFrames   = [getSprite('Mario_Fire_Jump')];
 export const MarioFireSlideFrames  = [getSprite('Mario_Fire_Slide')];
 export const MarioFireCrouchFrames = [getSprite('Mario_Fire_Crouch')];
 export const MarioFireThrowFrames  = [getSprite('Mario_Fire_Throw')];
+export const MarioFireClimbFrames = [getSprite('Mario_Fire_Climb1'), getSprite('Mario_Fire_Climb2')];
 
 export default class Player extends Entity {
   constructor(x, y, collision, addItemCallback, color = 0) {
@@ -124,6 +128,7 @@ export default class Player extends Entity {
     this.pipeAnimationSpeed = 30;
 
     this.finishedLevel = false;
+    let flagPoints = 0;
 
     if (DEBUG_MODE) {
       this.activateStarman();
@@ -137,6 +142,7 @@ export default class Player extends Entity {
     this.animations.jump  = this.preloadImages(MarioSmallJumpFrames);
     this.animations.skid  = this.preloadImages(MarioSmallSlideFrames);
     this.animations.dead  = this.preloadImages(MarioSmallDeathFrames);
+    this.animations.climb  = this.preloadImages(MarioSmallClimbFrames);
   }
 
   preloadImages(srcArray) {
@@ -169,8 +175,32 @@ export default class Player extends Entity {
 
     if (this.currentAnimation !== 'dead') {
       if (this.finishedLevel) {
-        console.log(`test`)
+        this.currentAnimation = 'climb';
         this.vx = 0;
+
+        const flag = entities.filter((entity) => entity instanceof Flag);
+
+        const isFlagOnGround = this.collision.checkVerticalCollisions(flag[0], entities);
+        const isMarioOnGround = this.collision.checkVerticalCollisions(this, entities);
+
+        if (!isMarioOnGround) this.y += 300 * delta;
+
+        if (!isFlagOnGround) {
+          flag[0].y += 300 * delta;
+        } else {
+          if (!flag[0].showedScore) {
+            scores.push(new Score(this.x + this.width / 2, this.y, this.flagPoints));
+            flag[0].showedScore = true;
+          }
+
+          this.currentAnimation = 'run';
+          this.x += 100 * delta;
+
+          if (this.x >= mapWidth - TILE_SIZE * 7) {
+            this.dead();
+          }
+        }
+
         return;
       }
 
@@ -452,17 +482,20 @@ export default class Player extends Entity {
       this.animations.skid   = this.preloadImages(MarioFireSlideFrames);
       this.animations.crouch = this.preloadImages(MarioFireCrouchFrames);
       this.animations.throw  = this.preloadImages(MarioFireThrowFrames);
+      this.animations.climb  = this.preloadImages(MarioFireClimbFrames);
     } else if (this.isBigMario) {
       this.animations.idle   = this.preloadImages(MarioBigIdleFrames);
       this.animations.run    = this.preloadImages(MarioBigRunFrames);
       this.animations.jump   = this.preloadImages(MarioBigJumpFrames);
       this.animations.skid   = this.preloadImages(MarioBigSlideFrames);
       this.animations.crouch = this.preloadImages(MarioBigCrouchFrames);
+      this.animations.climb  = this.preloadImages(MarioBigClimbFrames);
     } else {
       this.animations.idle   = this.preloadImages(MarioSmallIdleFrames);
       this.animations.run    = this.preloadImages(MarioSmallRunFrames);
       this.animations.jump   = this.preloadImages(MarioSmallJumpFrames);
       this.animations.skid   = this.preloadImages(MarioSmallSlideFrames);
+      this.animations.climb  = this.preloadImages(MarioSmallClimbFrames);
     }
   }
 
@@ -592,14 +625,16 @@ export default class Player extends Entity {
   }
 
   isCollidingWith(entity) {
-    const toleranceX = entity.toleranceX || 0; // Default tolerance to 0 if not provided
-    const toleranceY = entity.toleranceY || 0; // Default tolerance to 0 if not provided
+    const toleranceTop = entity.toleranceTop || 0;
+    const toleranceRight = entity.toleranceRight || 0;
+    const toleranceBottom = entity.toleranceBottom || 0;
+    const toleranceLeft = entity.toleranceLeft || 0;
 
     return (
-      this.x + toleranceX < entity.x + entity.width &&
-      this.x + this.width - toleranceX > entity.x &&
-      this.y + toleranceY < entity.y + entity.height &&
-      this.y + this.height - toleranceY > entity.y
+      this.x + toleranceLeft < entity.x + entity.width &&
+      this.x + this.width - toleranceRight > entity.x &&
+      this.y + toleranceTop < entity.y + entity.height &&
+      this.y + this.height - toleranceBottom > entity.y
     );
   }
 
@@ -641,29 +676,25 @@ export default class Player extends Entity {
 
   handleItemCollection(entity) {
     if (entity instanceof Flagpole) {
-      console.log(`ENDED!`);
-
       const poleTop = entity.y;
       const poleBottom = entity.y + entity.height;
       const touchY = this.y;
 
       const relativeTouch = (touchY - poleTop) / entity.height;
 
-      let points = 0;
       if (relativeTouch <= 0.1) {
-        points = 5000; // top 10% - highest score
+        this.flagPoints = 5000; // top 10% - highest score
       } else if (relativeTouch <= 0.3) {
-        points = 2000; // top 30%
+        this.flagPoints = 2000; // top 30%
       } else if (relativeTouch <= 0.5) {
-        points = 800; // top 50%
+        this.flagPoints = 800; // top 50%
       } else if (relativeTouch <= 0.7) {
-        points = 400;
+        this.flagPoints = 400;
       } else {
-        points = 100; // bottom part
+        this.flagPoints = 100; // bottom part
       }
 
       this.finishedLevel = true;
-      scores.push(new Score(this.x + this.width / 2, this.y, points));
     }
 
     if (entity instanceof Starman) {
@@ -846,6 +877,7 @@ export default class Player extends Entity {
     this.animations.run  = this.preloadImages(MarioSmallRunFrames);
     this.animations.jump = this.preloadImages(MarioSmallJumpFrames);
     this.animations.skid = this.preloadImages(MarioSmallSlideFrames);
+    this.animations.climb = this.preloadImages(MarioSmallClimbFrames);
 
     this.height = TILE_SIZE - this.heightTolerance;
     super.setImageHeight(this.height);

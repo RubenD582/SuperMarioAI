@@ -21,6 +21,7 @@ import Platform from "../Blocks/platform.jsx";
 import PipeConnection from "../Blocks/pipeConnection.jsx";
 import { v4 as uuidv4 } from 'uuid';
 import Flagpole from "../entities/flagpole.jsx";
+import Flag from "../entities/flag.jsx";
 
 const FIRST_LEVEL = "1-2/level_1-2a.json";
 
@@ -187,6 +188,8 @@ const GameContent = () => {
         addItemCallback
       );
 
+      player.changeHitboxSize(0, 0, 0, 0)
+
       currPlayers.push(player);
     }
 
@@ -257,9 +260,17 @@ const GameContent = () => {
             props.collision, props.solid, props.layer
           );
 
-          flagpole.changeHitboxSize(10);
+          flagpole.changeHitboxSize(0, 12, 0, 12);
 
           addItemCallback(flagpole);
+          return;
+        case "flag":
+          const flag = new Flag(
+            props.x, props.y, props.width, props.height, props.image,
+            props.collision, props.solid, props.layer
+          );
+
+          addItemCallback(flag);
           return;
         default:
           // Default block type
@@ -328,6 +339,10 @@ const GameContent = () => {
         // Handle enemies (create and add to game)
         if (type === "goomba" || type === "koopa" || type === "koopaRed") {
           const enemy = createEnemy(type, colIndex, rowIndex, layer);
+
+          if (enemy instanceof Koopa) {
+            enemy.changeHitboxSize(TILE_SIZE * 0.5, 0, 0, 0);
+          }
 
           if (enemy) {
             addItemCallback(enemy);

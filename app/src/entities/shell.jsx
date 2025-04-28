@@ -1,12 +1,14 @@
 import Entity from './Entity';
-import KoopaShell from '../assets/Sprites/Koopa_Shell_Green.png';
+import KoopaShellGreen from '../assets/Sprites/Koopa_Shell_Green.png';
+import KoopaShellRed from '../assets/Sprites/Koopa_Shell_Red.png';
+
 import KoopaShellUnderground from '../assets/Sprites/Koopa_Shell_underground.png';
 import { mapType } from "../screens/game.jsx";
 
-export let ShellFrames = [KoopaShell];
+export let ShellFrames = [KoopaShellGreen];
 
 export default class Shell extends Entity {
-  constructor(x, y, collision) {
+  constructor(x, y, collision, isRed) {
     super(x, y, 32, 32);
 
     this.speed = 450;
@@ -32,6 +34,10 @@ export default class Shell extends Entity {
 
     if (mapType === 'underground') {
       ShellFrames = [KoopaShellUnderground];
+    }
+
+    if (isRed) {
+      ShellFrames = [KoopaShellRed];
     }
 
     this.preloadAnimations();

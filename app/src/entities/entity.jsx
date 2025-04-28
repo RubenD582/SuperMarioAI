@@ -21,8 +21,10 @@ export default class Entity {
     this.imageHeight = imageHeight;
 
     this.start = false;
-    this.toleranceX = 0;
-    this.toleranceY = 0;
+    this.toleranceTop    = 0;
+    this.toleranceRight  = 0;
+    this.toleranceBottom = 0;
+    this.toleranceLeft   = 0;
   }
 
   // Call this when animation changes
@@ -82,8 +84,10 @@ export default class Entity {
     this.imageHeight = height;
   }
 
-  changeHitboxSize(newWidth, newHeight) {
-    this.toleranceX = newWidth;
-    this.toleranceY = newHeight;
+  changeHitboxSize(top, right, bottom, left) {
+    this.toleranceTop    = top;
+    this.toleranceRight  = right;
+    this.toleranceBottom = bottom;
+    this.toleranceLeft   = left;
   }
 }

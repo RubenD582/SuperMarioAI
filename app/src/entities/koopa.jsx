@@ -176,7 +176,7 @@ export default class Koopa extends Entity {
   }
 
   spawnShell() {
-    const shell = new Shell(this.x, this.y, this.collision);
+    const shell = new Shell(this.x, this.y, this.collision, this.isRedKoopa);
     shell.vx = 0;
     shell.vy = 0;
     this.addItemCallback(shell);

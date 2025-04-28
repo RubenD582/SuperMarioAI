@@ -24,15 +24,17 @@ export default class Collision {
   }
 
   getEntityBounds(e, isVertical = false) {
-    const toleranceX = e.toleranceX || 0;
-    const toleranceY =  e.toleranceY || 0;
+    const toleranceTop    = e.toleranceTop || 0;
+    const toleranceRight  = e.toleranceRight || 0;
+    const toleranceBottom = e.toleranceBottom || 0;
+    const toleranceLeft   = e.toleranceLeft || 0;
     const buffer = e.isBigMario ? 3 : 2;
 
     return {
-      top: e.y - toleranceY,
-      bottom: e.y + e.height,
-      left: e.x + (isVertical ? buffer + toleranceX : toleranceX),
-      right: e.x + e.width - (isVertical ? buffer + toleranceX : toleranceX)
+      top: e.y - toleranceTop,
+      bottom: e.y + e.height + toleranceBottom,
+      left: e.x + (isVertical ? buffer + toleranceLeft : toleranceLeft),
+      right: e.x + e.width - (isVertical ? buffer + toleranceRight : toleranceRight)
     };
   }
 
@@ -240,18 +242,14 @@ export default class Collision {
   drawDebug(ctx, entity) {
     if (!ctx || !entity || !blocks) return;
 
-    const toleranceX = entity.toleranceX || 0;
-    const toleranceY = entity.toleranceY || 0; // Corrected here
-
-// Show smaller hitbox
     const bounds = this.getEntityBounds(entity, true);
     ctx.strokeStyle = "red";
     ctx.lineWidth = 2;
     ctx.strokeRect(
-      bounds.left + toleranceX,
-      entity.y + toleranceY,
-      bounds.right - bounds.left - 2 * toleranceX, // Corrected here to subtract tolerance on both sides of the X axis
-      entity.height - 2 * toleranceY // Corrected here to subtract tolerance on both sides of the Y axis
+      bounds.left, // Already includes toleranceLeft in getEntityBounds
+      bounds.top,  // Already includes toleranceTop in getEntityBounds
+      bounds.right - bounds.left, // Already calculated properly
+      bounds.bottom - bounds.top  // Already calculated properly
     );
 
 
