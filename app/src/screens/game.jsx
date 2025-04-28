@@ -23,7 +23,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Flagpole from "../entities/flagpole.jsx";
 import Flag from "../entities/flag.jsx";
 
-const FIRST_LEVEL = "1-2/level_1-2a.json";
+const FIRST_LEVEL = "1-1/level_1-1a.json";
 
 export let scores = [];
 export let blocks = [];
@@ -367,8 +367,8 @@ const GameContent = () => {
   useEffect(() => {
     const gameLoop = createGameLoop({
       maxStep: 0.05,
-      onUpdate: ({ delta, gameDelta, gameTime }) => {
-        const fps = Math.round(1 / delta);
+      targetFPS: 144,
+      onUpdate: ({ delta, gameDelta, gameTime, fps, actualFPS }) => {
         if (blocks.length > 0) {
           if (entities && entities.length > 0) {
             for (let i = entities.length - 1; i >= 0; i--) {

@@ -319,35 +319,47 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     const screenWidth = tilesWide * TILE_SIZE;
 
     const screenHeight = window.innerHeight;
-    const leftBound = cameraXRef.current - 50;
-    const rightBound = cameraXRef.current + screenWidth + 50;
 
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    // Ensure pixel-perfect camera positioning
+    const exactCameraX = Math.round(cameraXRef.current);
+    const leftBound = exactCameraX - 50;
+    const rightBound = exactCameraX + screenWidth + 50;
+
+    // Clear the transformation matrix first
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Clear the canvas with background
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Apply integer scale transformation
+    const integerScale = Math.max(1, Math.floor(scale));
+    ctx.setTransform(integerScale, 0, 0, integerScale, 0, 0);
+
+    // Disable image smoothing for crisp pixel art
     ctx.imageSmoothingEnabled = false;
 
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
-
     ctx.save();
-    ctx.translate(-cameraXRef.current, 0);
+    // Use rounded camera position for pixel-perfect scrolling
+    ctx.translate(-exactCameraX, 0);
 
     // Filter visible blocks and entities
     const visibleBlocks = blocks
-      .filter(block => block.x + block.width >= leftBound && block.x <= rightBound);
+        .filter(block => block.x + block.width >= leftBound && block.x <= rightBound);
 
     const visibleEntities = entities
-      .filter(entity => entity.x + entity.width >= leftBound && entity.x <= rightBound)
-      .sort((a, b) => a.layer - b.layer); // optional if you want entity layering
+        .filter(entity => entity.x + entity.width >= leftBound && entity.x <= rightBound)
+        .sort((a, b) => a.layer - b.layer);
 
     // 1. Draw blocks with layer === 0
     visibleBlocks
-      .filter(block => block.layer === 0)
-      .forEach(block => {
-        block.draw(ctx);
-        if (block.fragments?.length > 0) {
-          block.drawAllFragments(ctx);
-        }
-      });
+        .filter(block => block.layer === 0)
+        .forEach(block => {
+          block.draw(ctx);
+          if (block.fragments?.length > 0) {
+            block.drawAllFragments(ctx);
+          }
+        });
 
     // 2. Draw entities
     visibleEntities.forEach(entity => {
@@ -365,14 +377,14 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
 
     // 3. Draw blocks with layer > 0
     visibleBlocks
-      .filter(block => block.layer > 0 && block.layer < 4)
-      .sort((a, b) => a.layer - b.layer) // optional: sort by layer if needed
-      .forEach(block => {
-        block.draw(ctx);
-        if (block.fragments?.length > 0) {
-          block.drawAllFragments(ctx);
-        }
-      });
+        .filter(block => block.layer > 0 && block.layer < 4)
+        .sort((a, b) => a.layer - b.layer)
+        .forEach(block => {
+          block.draw(ctx);
+          if (block.fragments?.length > 0) {
+            block.drawAllFragments(ctx);
+          }
+        });
 
     // Draw entities that is not items, such as Goombas, Koopas, etc.
     visibleEntities.forEach(entity => {
@@ -398,24 +410,24 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
     });
 
     visibleBlocks
-      .filter(block => block.layer === 4)
-      .sort((a, b) => a.layer - b.layer)
-      .forEach(block => {
-        block.draw(ctx);
-        if (block.fragments?.length > 0) {
-          block.drawAllFragments(ctx);
-        }
-      });
+        .filter(block => block.layer === 4)
+        .sort((a, b) => a.layer - b.layer)
+        .forEach(block => {
+          block.draw(ctx);
+          if (block.fragments?.length > 0) {
+            block.drawAllFragments(ctx);
+          }
+        });
 
     // 5. Draw pipe tops absolutely last
     visibleBlocks
-      .filter(block => block.type === "pipeTop" || block.type === "pipeConnection")
-      .forEach(block => {
-        block.draw(ctx);
-        if (block.fragments?.length > 0) {
-          block.drawAllFragments(ctx);
-        }
-      });
+        .filter(block => block.type === "pipeTop" || block.type === "pipeConnection")
+        .forEach(block => {
+          block.draw(ctx);
+          if (block.fragments?.length > 0) {
+            block.drawAllFragments(ctx);
+          }
+        });
 
     scores.forEach((score) => {
       score.draw(ctx);
@@ -423,25 +435,43 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
 
     ctx.restore();
 
+    // Handle content canvas rendering with proper pixel scaling
     if (contentCanvas) {
       const contentCtx = contentCanvas.getContext('2d');
       if (contentCtx) {
         contentCtx.clearRect(0, 0, contentCanvas.width, contentCanvas.height);
 
-        let drawWidth = canvas.width;
-        let drawHeight = canvas.height;
-        let offsetX = (contentCanvas.width - drawWidth) / 2;
-        let offsetY = (contentCanvas.height - drawHeight) / 2;
+        // Disable smoothing for the content canvas as well
+        contentCtx.imageSmoothingEnabled = false;
 
-        // Optionally, prevent negative offset if the canvas is too big
-        offsetX = Math.max(0, offsetX);
-        offsetY = Math.max(0, offsetY);
+        // Calculate proper integer scaling factor
+        // Use Math.floor to ensure whole-number scaling
+        const baseScale = Math.min(
+            Math.floor(contentCanvas.width / canvas.width),
+            Math.floor(contentCanvas.height / canvas.height),
+            1
+        );
 
-        contentCtx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
+        // Use integer scaling to maintain pixel crispness
+        const pixelPerfectScale = baseScale > 0 ? baseScale : 1;
+
+        const drawWidth = canvas.width * pixelPerfectScale;
+        const drawHeight = canvas.height * pixelPerfectScale;
+
+        // Center the content in the canvas
+        const offsetX = Math.floor((contentCanvas.width - drawWidth) / 2);
+        const offsetY = Math.floor((contentCanvas.height - drawHeight) / 2);
+
+        // Draw with integer offsets to maintain pixel perfection
+        contentCtx.drawImage(
+            canvas,
+            Math.floor(offsetX),
+            Math.floor(offsetY),
+            Math.floor(drawWidth),
+            Math.floor(drawHeight)
+        );
       }
     }
-
-
   };
 
   return (
@@ -450,7 +480,7 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
         <canvas
           ref={canvasRef}
           style={{
-            imageRendering: 'pixelated',
+            // imageRendering: 'pixelated',
             msInterpolationMode: 'nearest-neighbor',
             ...style
           }}
@@ -460,7 +490,7 @@ const DrawLevel = React.forwardRef(({ players = [], entities = [], backgroundCol
       <canvas
         ref={canvasRef}
         style={{
-          imageRendering: 'pixelated',
+          // imageRendering: 'pixelated',
           msInterpolationMode: 'nearest-neighbor',
           ...style
         }}

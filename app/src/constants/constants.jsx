@@ -11,4 +11,4 @@ export const TILE_SIZE = 32;
 export const TARGET_FPS = 240;
 export const FRAME_DURATION = 1000 / TARGET_FPS;
 export const DRAW_HITBOX = false;
-export const TV_EFFECT = true;
+export const TV_EFFECT = false;
