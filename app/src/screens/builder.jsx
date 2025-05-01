@@ -40,6 +40,9 @@ const BLOCK_OPTIONS = {
     { label: 'Level', value: 'level' },
     { label: 'Plant & Level', value: 'plant_level' },
   ],
+  flagPole: [
+    { label: 'Level', value: 'level' },
+  ],
   pipeConnection: [],
   platform: [
     { label: 'Up', value: 'up' },
@@ -51,15 +54,15 @@ const BLOCK_OPTIONS = {
 
 // Memoized Tile component
 const Tile = memo(({
-  rowIndex,
-  colIndex,
-  tileId,
-  onMouseDown,
-  onMouseEnter,
-  onMouseUp,
-  showCoordinates,
-  onTileClick
-}) => {
+                     rowIndex,
+                     colIndex,
+                     tileId,
+                     onMouseDown,
+                     onMouseEnter,
+                     onMouseUp,
+                     showCoordinates,
+                     onTileClick
+                   }) => {
   // Handle both string-based and object-based tile IDs
   const getTileInfo = (tileId) => {
     if (!tileId) return null;
@@ -183,6 +186,7 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
       if (selectedBlock === 'pipeTop') return 'pipe';
       if (selectedBlock === 'platform') return 'platform';
       if (selectedBlock === 'pipeConnection') return 'pipeConnection';
+      if (selectedBlock === 'flagPole') return 'flagPole';
       return null;
     }
 
@@ -192,7 +196,8 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
       if (selectedBlock.id === 'undergroundBrick') return 'undergroundBrick';
       if (selectedBlock.id === 'pipeTop') return 'pipe';
       if (selectedBlock.id === 'platform') return 'platform';
-      if (selectedBlock === 'pipeConnection') return 'pipeConnection';
+      if (selectedBlock.id === 'pipeConnection') return 'pipeConnection';
+      if (selectedBlock.id === 'flagPole') return 'flagPole';
     }
 
     return null;
@@ -223,6 +228,9 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
       break;
     case 'pipeConnection':
       title = 'SET EXIT LOCATION';
+      break;
+    case 'flagPole':
+      title = 'SET NEXT LEVEL';
       break;
     default:
       title = 'Block Settings';
@@ -267,6 +275,18 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
             className="w-full text-black p-1 rounded"
             placeholder="e.g level_1-1a"
             onChange={(e) => updateBlockContent('pipeTop', 'level', e.target.value)}
+          />
+        </div>
+      )}
+
+      {blockType === 'flagPole' && contentType === 'level' && (
+        <div className="mt-2">
+          <label className="block text-sm mb-1">Load JSON Level:</label>
+          <input
+            type="text"
+            className="w-full text-black p-1 rounded"
+            placeholder="e.g level_1-1a"
+            onChange={(e) => updateBlockContent('flagPole', 'level', e.target.value)}
           />
         </div>
       )}
@@ -330,6 +350,41 @@ const BlockEditor = ({ selectedBlock, updateBlockContent }) => {
   );
 };
 
+// Block Preview component to show the tile with opacity
+const BlockPreview = memo(({ hoverPosition, selectedTileId, scrollPosition, eraseMode }) => {
+  if (!hoverPosition || eraseMode) return null;
+
+  const tile = tileById[selectedTileId];
+  if (!tile) return null;
+
+  const { row, col } = hoverPosition;
+
+  return (
+    <div
+      className="absolute pointer-events-none z-20"
+      style={{
+        left: `${col * TILE_SIZE}px`,
+        top: `${row * TILE_SIZE}px`,
+        opacity: 0.7,
+      }}
+    >
+      <img
+        src={tile.url}
+        alt={`preview-${selectedTileId}`}
+        style={{
+          display: 'block',
+          width: `${tile.w}px`,
+          height: `${tile.h}px`,
+          imageRendering: 'pixelated',
+          margin: 0,
+          padding: 0,
+          boxSizing: 'border-box',
+        }}
+      />
+    </div>
+  );
+});
+
 // Main LevelBuilder Component
 const LevelBuilder = ({ onBack }) => {
   const [selectedBlockPosition, setSelectedBlockPosition] = useState(null);
@@ -348,6 +403,8 @@ const LevelBuilder = ({ onBack }) => {
   const [gridWidth, setGridWidth] = useState(levelData[0].length);
   const [placementMode, setPlacementMode] = useState(false);
   const [fileName, setFileName] = useState('mario-level.json');
+  // Add hover position state for block preview
+  const [hoverPosition, setHoverPosition] = useState(null);
 
   const gridRef = useRef(null);
   const containerRef = useRef(null);
@@ -617,6 +674,9 @@ const LevelBuilder = ({ onBack }) => {
   }, [scrollPosition, selectedTileId, updateTile]);
 
   const handleTileMouseEnter = useCallback((rowIndex, colIndex) => {
+    // Update hover position for block preview
+    setHoverPosition({ row: rowIndex, col: colIndex });
+
     if (isMouseDown && placementMode) {
       const selectedTile = tileById[selectedTileId];
       const imageSizeW = selectedTile?.w || TILE_SIZE;
@@ -656,6 +716,11 @@ const LevelBuilder = ({ onBack }) => {
       setRulerEnd({ row, col });
     }
   }, [middleMouseDragging, scrollPosition]);
+
+  // Handle mouse leaving the grid
+  const handleGridMouseLeave = useCallback(() => {
+    setHoverPosition(null);
+  }, []);
 
   // Calculate visible range
   const { startCol, endCol } = useMemo(() => {
@@ -753,6 +818,7 @@ const LevelBuilder = ({ onBack }) => {
             className="relative flex-1 overflow-hidden flex items-center"
             ref={gridRef}
             onMouseMove={handleGridMouseMove}
+            onMouseLeave={handleGridMouseLeave}
           >
             <div
               className="absolute top-0 left-0"
@@ -768,6 +834,16 @@ const LevelBuilder = ({ onBack }) => {
                 boxSizing: 'border-box',
               }}
             >
+              {/* Block Preview - Show preview of selected tile */}
+              {!selectedBlockPosition && !eraseMode &&
+                <BlockPreview
+                  hoverPosition={hoverPosition}
+                  selectedTileId={selectedTileId}
+                  scrollPosition={scrollPosition}
+                  eraseMode={eraseMode}
+                />
+              }
+
               {middleMouseDragging && rulerStart && rulerEnd && (
                 <div
                   className="absolute z-20 pointer-events-none"

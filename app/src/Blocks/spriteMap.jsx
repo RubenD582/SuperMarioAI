@@ -15,7 +15,7 @@ import underground from '../assets/Sprites/UndergroundBlock.png';
 import undergroundBrick from '../assets/Sprites/UndergroundBrick.png';
 import pipeTop from '../assets/Sprites/PipeTop.png';
 import pipeBottom from '../assets/Sprites/PipeBottom.png';
-import coinUnderground from '../assets/Sprites/Coin_Underground.png';
+import coinUnderground from '../assets/Sprites/Coin_Underground1.png';
 import platform from '../assets/Sprites/platform.png';
 import pipeConnection from '../assets/Sprites/PipeConnection.png';
 import castle from '../assets/Sprites/Castle.png';

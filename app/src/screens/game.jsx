@@ -22,8 +22,9 @@ import PipeConnection from "../Blocks/pipeConnection.jsx";
 import { v4 as uuidv4 } from 'uuid';
 import Flagpole from "../entities/flagpole.jsx";
 import Flag from "../entities/flag.jsx";
+import BigCoin from "../entities/coin.jsx";
 
-const FIRST_LEVEL = "1-1/level_1-1a.json";
+const FIRST_LEVEL = "test/test.json";
 
 export let scores = [];
 export let blocks = [];
@@ -31,33 +32,6 @@ export let mapType = 'overworld';
 export let mapHeight = null;
 export let mapWidth = null;
 export let playerX = null;
-
-const readGamepadInput = () => {
-  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const gp = gamepads[0]; // First controller
-
-  if (!gp) return null;
-
-  return {
-    left: gp.axes[0] < -0.5,
-    right: gp.axes[0] > 0.5,
-    up: gp.axes[1] < -0.5,
-    down: gp.axes[1] > 0.5,
-    xButton: gp.buttons[0].pressed, // X button (button 0)
-    circleButton: gp.buttons[1].pressed, // Circle
-    squareButton: gp.buttons[2].pressed, // Square
-    triangleButton: gp.buttons[3].pressed, // Triangle
-
-    // D-pad buttons
-    dUp: gp.buttons[12].pressed, // D-Pad Up
-    dDown: gp.buttons[13].pressed, // D-Pad Down
-    dLeft: gp.buttons[14].pressed, // D-Pad Left
-    dRight: gp.buttons[15].pressed, // D-Pad Right
-
-    rightTrigger: gp.buttons[7].pressed,
-  };
-};
-
 
 const preloadedImagesPromise = (function () {
   const loadedImages = {};
@@ -97,6 +71,59 @@ const GameContent = () => {
   const [population, setPopulation] = useState(1);
   const [players, setPlayers] = useState([]);
   const [entities, setEntities] = useState([]);
+
+  const [activeGamepadIndex, setActiveGamepadIndex] = useState(null);
+  const activeGamepadIndexRef = useRef(null);
+
+  const readGamepadInput = (activeIndex = 0) => {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp = gamepads[activeIndex];
+
+    if (!gp || !gp.connected) return null;
+
+    return {
+      left: gp.axes[0] < -0.5,
+      right: gp.axes[0] > 0.5,
+      up: gp.axes[1] < -0.5,
+      down: gp.axes[1] > 0.5,
+      xButton: gp.buttons[0].pressed,
+      circleButton: gp.buttons[1].pressed,
+      squareButton: gp.buttons[2].pressed,
+      triangleButton: gp.buttons[3].pressed,
+      dUp: gp.buttons[12].pressed,
+      dDown: gp.buttons[13].pressed,
+      dLeft: gp.buttons[14].pressed,
+      dRight: gp.buttons[15].pressed,
+      rightTrigger: gp.buttons[7].pressed,
+    };
+  };
+
+  useEffect(() => {
+    const pollGamepads = () => {
+      const gamepads = navigator.getGamepads?.() || [];
+
+      for (let i = 0; i < gamepads.length; i++) {
+        const gp = gamepads[i];
+        if (!gp) continue;
+
+        const anyButtonPressed = gp.buttons.some(btn => btn.pressed);
+        const anyAxisMoved = gp.axes.some(axis => Math.abs(axis) > 0.2);
+
+        if (anyButtonPressed || anyAxisMoved) {
+          if (activeGamepadIndexRef.current !== i) {
+            activeGamepadIndexRef.current = i;
+            setActiveGamepadIndex(i);
+            // Optional: console.log(`Switched to gamepad ${i}`);
+          }
+          break; // prioritize first active one
+        }
+      }
+    };
+
+    const interval = setInterval(pollGamepads, 100); // check 10x/second
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     console.log(entities);
@@ -188,7 +215,16 @@ const GameContent = () => {
         addItemCallback
       );
 
-      player.changeHitboxSize(0, 0, 0, 0)
+      player.changeHitboxSize(0, 3, 0, 3);
+
+      // Initialize player keys with gamepad input (empty or default values initially)
+      player.keys = {
+        left: false,
+        right: false,
+        up: false,
+        down: false,
+        b: false,
+      };
 
       currPlayers.push(player);
     }
@@ -255,9 +291,10 @@ const GameContent = () => {
             props.collision, props.layer
           );
         case "flagPole":
+          let nextLevel = blockContent?.level || null;
           const flagpole = new Flagpole(
             props.x, props.y, props.width, props.height, props.image,
-            props.collision, props.solid, props.layer
+            props.collision, props.solid, nextLevel, props.layer
           );
 
           flagpole.changeHitboxSize(0, 12, 0, 12);
@@ -271,6 +308,14 @@ const GameContent = () => {
           );
 
           addItemCallback(flag);
+          return;
+        case "coinUnderground":
+          const coin = new BigCoin(
+            props.x, props.y, props.width, props.height, props.image, addItemCallback,
+            props.collision, props.solid, props.layer
+          );
+
+          addItemCallback(coin);
           return;
         default:
           // Default block type
@@ -369,6 +414,8 @@ const GameContent = () => {
       maxStep: 0.05,
       targetFPS: 144,
       onUpdate: ({ delta, gameDelta, gameTime, fps, actualFPS }) => {
+        const gamepadState = activeGamepadIndex !== null ? readGamepadInput(activeGamepadIndex) : null;
+
         if (blocks.length > 0) {
           if (entities && entities.length > 0) {
             for (let i = entities.length - 1; i >= 0; i--) {
@@ -409,7 +456,6 @@ const GameContent = () => {
           }
 
           if (players && players.length > 0) {
-            const gamepadState = readGamepadInput();
 
             players.forEach((player) => {
               if (gamepadState) {
@@ -450,6 +496,41 @@ const GameContent = () => {
     return () => gameLoop.stop();
   }, [players, entities]);
 
+  useEffect(() => {
+    window.addEventListener('gamepadconnected', () => {
+      console.log('Gamepad connected');
+
+      // Delay the key press by 2 seconds
+      setTimeout(() => {
+        // Create the keydown event for the Ctrl key
+        const ctrlKeyEvent = new KeyboardEvent('keydown', {
+          key: 'Control',
+          code: 'ControlLeft',  // or 'ControlRight' depending on which side you want
+          keyCode: 17,          // The keyCode for the Control key
+          ctrlKey: true,        // Mark the control key as pressed
+          bubbles: true,        // Allow event bubbling
+          cancelable: true,     // Allow the event to be cancelled
+        });
+
+        document.dispatchEvent(ctrlKeyEvent);
+
+        // Create the keyup event for the Ctrl key
+        const ctrlKeyReleaseEvent = new KeyboardEvent('keyup', {
+          key: 'Control',
+          code: 'ControlLeft',
+          keyCode: 17,
+          ctrlKey: false,
+          bubbles: true,
+          cancelable: true,
+        });
+
+        document.dispatchEvent(ctrlKeyReleaseEvent);
+      }, 100);  // 2-second delay (2000 ms)
+    });
+  }, []);
+
+
+
   if (!levelData || blocks.length === 0) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-black">
@@ -459,23 +540,25 @@ const GameContent = () => {
   }
 
   return (
-    <div
-      ref={gameRef}
-      className="w-screen h-screen flex items-center justify-center overflow-hidden"
-      style={{ backgroundColor: 'black' }}
-    >
-      <DrawLevel
-        ref={drawLevelRef}
-        players={players}
-        entities={entities}
-        cameraX={camera.cameraX}
-        backgroundColor={levelBackground}
-        style={{
-          width: '100%',
-          height: '100%'
-        }}
-      />
-    </div>
+    <>
+      <div
+        ref={gameRef}
+        className="w-screen h-screen flex items-center justify-center overflow-hidden"
+        style={{ backgroundColor: 'black' }}
+      >
+        <DrawLevel
+          ref={drawLevelRef}
+          players={players}
+          entities={entities}
+          cameraX={camera.cameraX}
+          backgroundColor={levelBackground}
+          style={{
+            width: '100%',
+            height: '100%'
+          }}
+        />
+      </div>
+    </>
   );
 };
 

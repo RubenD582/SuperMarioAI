@@ -1,7 +1,3 @@
-import PipeTop from "../Blocks/pipeTop.jsx";
-
-const DEBUG_MODE = false;
-
 import Entity from './Entity';
 import Fireball from './fireball.jsx';
 import {
@@ -22,7 +18,7 @@ import {
   WALK_FALL_A
 } from "../constants/physicsConstants.jsx";
 import {TILE_SIZE} from "../constants/constants.jsx";
-import {Flower, Mushroom, Starman} from "../Blocks/item.jsx";
+import {Coin, Flower, Mushroom, Starman} from "../Blocks/item.jsx";
 import Goomba from "./goomba.jsx";
 import Koopa from "./koopa.jsx";
 import Shell from "./shell.jsx";
@@ -32,6 +28,9 @@ import Flagpole from "./flagpole.jsx";
 import {mapWidth, scores} from "../screens/game.jsx";
 import Score from "../utils/score.jsx";
 import Flag from "./flag.jsx";
+import BigCoin from "./coin.jsx";
+
+const DEBUG_MODE = false;
 
 // Dynamic import of all sprite assets
 const spriteImports = import.meta.glob('../assets/Sprites/0/*.png', { eager: true });
@@ -81,6 +80,8 @@ export default class Player extends Entity {
   constructor(x, y, collision, addItemCallback, color = 0) {
     super(x, y, TILE_SIZE, TILE_SIZE, TILE_SIZE, 2);
 
+    this.playerScore = 0;
+
     this.heightTolerance = 5;
     this.addItemCallback = addItemCallback;
     this.collision = collision;
@@ -88,7 +89,14 @@ export default class Player extends Entity {
     this.grounded = true;
     this.color = color;
     this.isDead = false;
-    this.keys = { left: false, right: false, up: false, down: false, b: false };
+    this.keys = {
+      left: false,
+      right: false,
+      up: false,
+      down: false,
+      b: false
+    };
+
 
     this.fallAcceleration = STOP_FALL;
 
@@ -101,6 +109,7 @@ export default class Player extends Entity {
 
     this.isFireMario = false;
     this.isBigMario = false;
+    this.canShoot = true;
 
     this.isInvincible = false;
     this.invincibilityTimer = 0;
@@ -128,7 +137,10 @@ export default class Player extends Entity {
     this.pipeAnimationSpeed = 30;
 
     this.finishedLevel = false;
-    let flagPoints = 0;
+    this.levelCompleteTimer = undefined;
+    this.levelTransitionStarted = false;
+    this.runningToEnd = false;
+    this.flagPoints = 0;
 
     if (DEBUG_MODE) {
       this.activateStarman();
@@ -174,30 +186,131 @@ export default class Player extends Entity {
     this.prevX = this.x;
 
     if (this.currentAnimation !== 'dead') {
+      // Inside the update method, replace the finishedLevel section with this improved version
       if (this.finishedLevel) {
-        this.currentAnimation = 'climb';
-        this.vx = 0;
+        // Initialize level completion sequence variables
+        if (this.levelCompleteTimer === undefined) {
+          this.levelCompleteTimer = 0;
+          this.levelTransitionStarted = false;
+          this.scoreDisplayed = false;
+          this.flagSlideComplete = false;
+          this.runningToEnd = false;
+        }
 
-        const flag = entities.filter((entity) => entity instanceof Flag);
+        // Get flag pole and flag entities
+        const flagPole = entities.find(entity => entity instanceof Flagpole);
+        const flag = entities.find(entity => entity instanceof Flag);
 
-        const isFlagOnGround = this.collision.checkVerticalCollisions(flag[0], entities);
-        const isMarioOnGround = this.collision.checkVerticalCollisions(this, entities);
+        // Safety check for flag and flagpole
+        if (!flag || !flagPole) {
+          console.warn('Flag or Flagpole not found in entities list');
+          this.finishedLevel = false;
+          return;
+        }
 
-        if (!isMarioOnGround) this.y += 300 * delta;
+        // Calculate flagpole positions if needed
+        const flagpoleX = flagPole.x;
+        const flagpoleY = flagPole.y;
+        const flagpoleHeight = flagPole.height;
 
-        if (!isFlagOnGround) {
-          flag[0].y += 300 * delta;
-        } else {
-          if (!flag[0].showedScore) {
-            scores.push(new Score(this.x + this.width / 2, this.y, this.flagPoints));
-            flag[0].showedScore = true;
+        // PHASE 1: Sliding down the flagpole
+        if (!this.flagSlideComplete) {
+          this.currentAnimation = 'climb';
+
+          // Lock X position to flagpole
+          this.x = flagpoleX - this.width / 2;
+
+          // Move down the pole with physics check
+          if (this.y < flagpoleY + flagpoleHeight - this.height) {
+            // Apply gravity with a speed cap for controlled sliding
+            const slideSpeed = 200;
+            this.y += slideSpeed * delta;
+
+            // Check for collisions with ground
+            const didCollide = this.collision.checkVerticalCollisions(this, entities);
+
+            if (didCollide || this.y >= flagpoleY + flagpoleHeight - this.height) {
+              this.flagSlideComplete = true;
+              this.runningToEnd = true;
+
+              // Ensure flag is at bottom too (might be redundant with your existing code)
+              flag.y = flagpoleY + flagpoleHeight - flag.height;
+            }
+          } else {
+            this.flagSlideComplete = true;
+            this.runningToEnd = true;
           }
 
-          this.currentAnimation = 'run';
-          this.x += 100 * delta;
+          // Make sure flag moves down too
+          if (flag.y < flagpoleY + flagpoleHeight - flag.height) {
+            flag.y += 300 * delta;
+          }
 
-          if (this.x >= mapWidth - TILE_SIZE * 7) {
-            this.dead();
+          // Display score when flag reaches bottom
+          if (this.flagSlideComplete && !this.scoreDisplayed) {
+            scores.push(new Score(this.x + this.width / 2, this.y, this.flagPoints));
+            this.scoreDisplayed = true;
+          }
+        }
+        // PHASE 2: Running to the end and handling physics
+        else if (this.runningToEnd) {
+          // Set animation to running
+          this.currentAnimation = 'run';
+          this.facing = "right";
+
+          // Move right
+          if (!this.levelTransitionStarted) {
+            this.vx = 100;
+
+            // Apply normal physics - horizontal movement
+            this.x += this.vx * delta;
+            this.collision.checkHorizontalCollisions(this);
+
+            // Apply gravity - key change to fix falling through blocks!
+            if (!this.grounded) {
+              this.vy += WALK_FALL * delta;
+            } else {
+              this.vy = 0;
+            }
+
+            // Apply vertical movement with proper collision detection
+            this.y += this.vy * delta;
+            this.grounded = this.collision.checkVerticalCollisions(this, entities);
+
+            // Check if reached end position
+            if (this.x >= mapWidth - TILE_SIZE * 7) {
+              this.levelTransitionStarted = true;
+              this.currentAnimation = 'idle';
+              this.vx = 0;
+              this.vy = 0;
+            }
+          }
+          // PHASE 3: End pause and level transition
+          else {
+            // Update timer
+            this.levelCompleteTimer += delta;
+
+            // After the timer completes, transition to the next level
+            if (this.levelCompleteTimer > 1.0) {
+              // Get the next level with fallback
+              const nextLevel = flagPole?.nextLevel || 'default_level';
+
+              // Reset all level completion states
+              this.finishedLevel = false;
+              this.levelCompleteTimer = undefined;
+              this.levelTransitionStarted = false;
+              this.scoreDisplayed = false;
+              this.flagSlideComplete = false;
+              this.runningToEnd = false;
+
+              this.x = TILE_SIZE * 2;
+              this.y = TILE_SIZE * 3;
+              this.vx = 0;
+              this.vy = 0;
+
+              // Switch to next level
+              setLevel(nextLevel);
+            }
           }
         }
 
@@ -238,14 +351,6 @@ export default class Player extends Entity {
           this.isInvincible = false;
           this.visibilityToggle = true; // Ensure player is visible
         }
-      }
-
-      if (this.keys.down && this.isBigMario && this.grounded) {
-        this.animations.crouch = this.preloadImages(this.isFireMario ? MarioFireCrouchFrames : MarioBigCrouchFrames);
-        this.currentAnimation = 'crouch';
-        this.vx = 0;
-
-        return;
       }
 
       if (this.growing) {
@@ -350,6 +455,12 @@ export default class Player extends Entity {
           }
         }
 
+        if (this.keys.down && this.isBigMario && this.grounded) {
+          this.animations.crouch = this.preloadImages(this.isFireMario ? MarioFireCrouchFrames : MarioBigCrouchFrames);
+          this.currentAnimation = 'crouch';
+          this.vx = 0;
+        }
+
         // Apply gravity and clamp velocity
         this.clampVelocity();
 
@@ -364,10 +475,14 @@ export default class Player extends Entity {
         if (this.vx > 0) this.facing = "right";
 
         if (this.keys.b && this.isFireMario) {
-          this.animations.throw = this.preloadImages(MarioFireThrowFrames);
-          this.currentAnimation = 'throw';
+          if (this.canShoot) {
+            this.animations.throw = this.preloadImages(MarioFireThrowFrames);
+            this.currentAnimation = 'throw';
 
-          this.shootFireball(this.keys.b);
+            this.shootFireball();
+          }
+        } else if (!this.keys.b) {
+          this.canShoot = true;
         }
 
         this.entityCollision(entities);
@@ -508,13 +623,14 @@ export default class Player extends Entity {
       this.lastFireTime = now;
     }
 
-    // Allow only two shots max in the 1s window, spaced by at least 500ms
     if (this.shotsFired < 2 && (!this.lastShotTime || now - this.lastShotTime >= 500)) {
+      this.currentAnimation = Math.abs(this.vx) > 0 ? 'run' : 'idle';
       this.spawnFireball();
       this.lastShotTime = now;
       this.shotsFired++;
 
       if (this.shotsFired === 2) {
+        this.canShoot = false;
         setTimeout(() => {
           this.shotsFired = 0;
           this.lastFireTime = 0;
@@ -531,6 +647,7 @@ export default class Player extends Entity {
     const fireballY = this.y + this.height * 0.1;
 
     const fireball = new Fireball(fireballX, fireballY, this.facing, this.collision, this.vx);
+    fireball.changeHitboxSize(-2, 2, 2, -2)
     this.addItemCallback(fireball);
   }
 
@@ -600,8 +717,12 @@ export default class Player extends Entity {
     const stompedEnemies = [];
 
     for (const entity of entities) {
-      if (this.isCollidingWith(entity)) console.log(`test`)
       if (entity === this || entity.remove || !this.isCollidingWith(entity)) continue;
+
+      if (entity instanceof BigCoin) {
+        entity.isCollected = true;
+        this.playerScore += entity.score;
+      }
 
       // Handle stomping first (priority)
       if (this.isStompingEntity(entity)) {
@@ -694,6 +815,15 @@ export default class Player extends Entity {
         this.flagPoints = 100; // bottom part
       }
 
+      this.animations.climb = this.preloadImages(MarioSmallClimbFrames);
+      if (this.isBigMario) {
+        this.animations.climb = this.preloadImages(MarioBigClimbFrames);
+      }
+
+      if (this.isFireMario) {
+        this.animations.climb = this.preloadImages(MarioFireClimbFrames);
+      }
+
       this.finishedLevel = true;
     }
 
@@ -730,6 +860,8 @@ export default class Player extends Entity {
   }
 
   handleEnemyCollision(entity) {
+    if (entity.isDead) return;
+
     if (entity instanceof PiranhaPlant) {
       if (entity.isDisabled) return;
 
@@ -746,31 +878,21 @@ export default class Player extends Entity {
       }
     }
 
-    if (entity instanceof Goomba && !entity.isDead) {
+    if (entity instanceof Goomba) {
       this.handleEnemyDamage(entity);
       return;
     }
 
     if (entity instanceof Koopa) {
-      if (entity.isDead) return;
-
-      if (this.starmanMode) {
-        entity.dead(this);
-      } else if (this.isBigMario) {
-        this.shrink();
-      } else if (!this.isInvincible) {
-        this.dead();
-      }
+      this.handleEnemyDamage(entity);
     }
   }
 
   handleEnemyDamage(entity) {
+    if (entity.isDead || entity.remove) return;
+
     if (this.starmanMode) {
-      if (entity instanceof Goomba) {
-        entity.dead(this);
-      } else {
-        entity.dead?.();
-      }
+      entity.dead?.(this);
     } else if (this.isBigMario) {
       this.shrink();
     } else if (!this.isInvincible) {
@@ -861,6 +983,10 @@ export default class Player extends Entity {
 
   shrink() {
     if (this.isInvincible) return;
+    if (this.isFireMario) {
+      this.isFireMario = false;
+      return;
+    }
 
     this.growing = false;
     this.growthStage = 0;
@@ -889,7 +1015,7 @@ export default class Player extends Entity {
     this.pipeDirection = direction;
     this.pipeTargetLevel = targetLevel;
     this.pipeTargetX = targetX * TILE_SIZE - TILE_SIZE / 2;
-    this.pipeTargetY = (targetY - 1) * TILE_SIZE;
+    this.pipeTargetY = this.isBigMario ? (targetY - 2) * TILE_SIZE : (targetY - 1) * TILE_SIZE;
 
     // Store the original position for animation reference
     this.pipeStartX = this.x;

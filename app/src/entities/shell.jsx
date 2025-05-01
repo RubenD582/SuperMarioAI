@@ -1,7 +1,6 @@
 import Entity from './Entity';
 import KoopaShellGreen from '../assets/Sprites/Koopa_Shell_Green.png';
 import KoopaShellRed from '../assets/Sprites/Koopa_Shell_Red.png';
-
 import KoopaShellUnderground from '../assets/Sprites/Koopa_Shell_underground.png';
 import { mapType } from "../screens/game.jsx";
 
@@ -24,7 +23,7 @@ export default class Shell extends Entity {
     this.animations = {};
 
     this.remove = false;
-    this.killedByFireball = false;
+    this.killedByFireballFlag = false; // Renamed to avoid conflict with the method
     this.flipY = false;
     this.spawnCooldown = 0.15;  // Immunity period after spawning
     this.active = false;  // Initially inactive to prevent immediate collisions
@@ -90,7 +89,7 @@ export default class Shell extends Entity {
         entities.forEach(entity => {
           if (entity.constructor.name === "Fireball" && !entity.explode && this.checkCollision(entity)) {
             entity.explode = true;
-            this.killedByFireball();
+            this.markAsKilledByFireball();
           }
         });
       }
@@ -98,7 +97,7 @@ export default class Shell extends Entity {
       if (this.vx < 0) this.facing = "right";
       if (this.vx > 0) this.facing = "left";
     } else {
-      if (this.killedByFireball) {
+      if (this.killedByFireballFlag) {
         this.y += this.vy * delta;
         this.vy += this.gravity * delta;
 
@@ -128,10 +127,10 @@ export default class Shell extends Entity {
     );
   }
 
-  // Rename to be more specific about what killed the shell
-  killedByFireball() {
+  // Renamed to be more specific about what killed the shell
+  markAsKilledByFireball() {
     this.isDead = true;
-    this.killedByFireball = true;
+    this.killedByFireballFlag = true; // Renamed flag
     this.flipY = true;
     this.vy = -300;
   }

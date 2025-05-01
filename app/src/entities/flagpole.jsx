@@ -5,7 +5,7 @@ import {TILE_SIZE} from "../constants/constants.jsx";
 export let FlagPoleFrames = [FlagPoleSprite];
 
 export default class Flagpole extends Entity {
-  constructor(x, y, width, height, image, collision, solid = true, layer = 3) {
+  constructor(x, y, width, height, image, collision, solid = true, nextLevel = null, layer = 3) {
     super(x, y, 32, 320, 320, layer);
 
     this.speed = 100;
@@ -16,6 +16,7 @@ export default class Flagpole extends Entity {
     this.frameDuration = 0.175;
     this.resetTimer = 0;
     this.currentAnimation = 'none';
+    this.nextLevel = nextLevel;
     this.animations = {
       none: [],
     };

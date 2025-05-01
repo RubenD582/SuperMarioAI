@@ -626,7 +626,13 @@
       null,
       null,
       null,
-      "flagPole",
+      {
+        "id": "flagPole",
+        "content": {
+          "type": "level",
+          "level": "1-2/level_1-2a"
+        }
+      },
       null,
       null,
       null,

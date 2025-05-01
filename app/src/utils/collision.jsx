@@ -7,6 +7,7 @@ import Koopa from "../entities/koopa.jsx";
 import Shell from "../entities/shell.jsx";
 import PiranhaPlant from "../entities/piranhaPlant.jsx";
 import PipeTop from "../Blocks/pipeTop.jsx";
+import BigCoin from "../entities/coin.jsx";
 
 export default class Collision {
   constructor(addItemCallback) {
@@ -28,7 +29,7 @@ export default class Collision {
     const toleranceRight  = e.toleranceRight || 0;
     const toleranceBottom = e.toleranceBottom || 0;
     const toleranceLeft   = e.toleranceLeft || 0;
-    const buffer = e.isBigMario ? 3 : 2;
+    const buffer = 0;
 
     return {
       top: e.y - toleranceTop,
@@ -70,7 +71,7 @@ export default class Collision {
       if (verticalOverlap <= 2) continue;
 
       if (e.vx > 0 && bounds.right > blockBounds.left && bounds.left < blockBounds.left) {
-        this.handleEntityBlockCollision(e, blockBounds.left - e.width);
+        this.handleEntityBlockCollision(e, blockBounds.left - e.width + (e.toleranceLeft || 0));
         hitObject = true;
 
         if (e instanceof Player) {
@@ -83,7 +84,7 @@ export default class Collision {
         }
 
       } else if (e.vx < 0 && bounds.left < blockBounds.right && bounds.right > blockBounds.right) {
-        this.handleEntityBlockCollision(e, blockBounds.right);
+        this.handleEntityBlockCollision(e, blockBounds.right - (e.toleranceRight || 0));
         hitObject = true;
       }
     }
@@ -121,14 +122,14 @@ export default class Collision {
           bounds.bottom <= blockBounds.top + Math.min(12, e.height / 2) &&
           bounds.top < blockBounds.top
         ) {
-          e.y = blockBounds.top - e.height;
+          e.y = blockBounds.top - e.height - (e.toleranceBottom || 0);
           e.vy = 0;
           e.grounded = true;
           collidedVertically = true;
 
           if (e instanceof Player) {
             // Mario going down a pipe
-            if (block.type === 'pipeTop' && e.keys.down && block.content?.level) {
+            if ((block.type === 'pipeTop' || block instanceof PipeTop) && (e.keys.down || e.currentAnimation === 'crouch') && block.content?.level) {
               // Make sure we're accessing the data correctly
               const targetLevel = block.content?.level || block.content?.data?.level;
               const targetX = block.content?.data?.x || 2;
@@ -159,7 +160,7 @@ export default class Collision {
           bounds.top >= blockBounds.bottom - 10 &&
           bounds.bottom > blockBounds.bottom
         ) {
-          e.y = blockBounds.bottom;
+          e.y = blockBounds.bottom + (e.toleranceTop || 0);
           e.vy = 0;
 
           if (e instanceof Player && !block.empty) {
@@ -234,6 +235,10 @@ export default class Collision {
       // If the entity is within the vertical range and horizontally aligned
       if (isVerticallyWithinRange && isHorizontallyAligned) {
         if (entity.dead) entity.dead(new Shell());
+        if (entity instanceof BigCoin) {
+          entity.spawnCoin();
+          entity.isCollected = true
+        }
       }
     });
   }

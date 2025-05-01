@@ -132,7 +132,7 @@ export default class Fireball extends Entity {
     this.animate(deltaTime);
   }
 
-  draw(ctx) {
+  draw(ctx, flipY) {
     const frames = this.getCurrentAnimationFrames();
     const frame = frames[this.frameIndex];
 

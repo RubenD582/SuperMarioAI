@@ -76,9 +76,12 @@ export default class MysteryBlock extends Block {
       ? this.animations['empty'][0]
       : this.animations['cycle'][this.blockFrameIndex];
 
-    this.spawnedItem?.draw(ctx);
+    for (const item of this.spawnedItems) {
+      item.draw(ctx);
+    }
 
     if (this.currentBlockImage) this.setImage(this.currentBlockImage);
     super.draw(ctx);
   }
+
 }
